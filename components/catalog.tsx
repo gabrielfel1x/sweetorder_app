@@ -303,7 +303,21 @@ export function Catalog() {
     setCart((prev) => prev.filter((i) => i.id !== id));
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
+
+      {/* ── Pattern: orange-corner-warm (brand amber, page-wide) ────────────── */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0"
+        style={{
+          backgroundImage: `
+            radial-gradient(circle 700px at 0% 280px, rgba(245, 158, 11, 0.13), transparent),
+            radial-gradient(circle 700px at 100% 280px, rgba(245, 158, 11, 0.10), transparent)
+          `,
+        }}
+      />
+
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
           <a href="/" className="flex items-center gap-2 shrink-0" aria-label="SweetOrder">
@@ -348,6 +362,25 @@ export function Catalog() {
       </header>
 
       <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-14 pb-10 overflow-hidden">
+
+        {/* Pattern: diagonal-cross-grid-top */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(45deg, transparent 49%, #e0d5c5 49%, #e0d5c5 51%, transparent 51%),
+              linear-gradient(-45deg, transparent 49%, #e0d5c5 49%, #e0d5c5 51%, transparent 51%)
+            `,
+            backgroundSize: "40px 40px",
+            WebkitMaskImage:
+              "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
+            maskImage:
+              "radial-gradient(ellipse 70% 60% at 50% 0%, #000 60%, transparent 100%)",
+          }}
+        />
+
+        {/* Floating cookie decorations */}
         <span
           aria-hidden
           className="pointer-events-none absolute right-[15%] top-4 text-5xl opacity-100 animate-float-cookie select-none"
@@ -425,7 +458,33 @@ export function Catalog() {
         </div>
       </section>
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
+
+      {/* ── Cookie grid ─────────────────────────────────────────────────────── */}
+      <main className="relative flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 pb-16">
+
+        {/* Pattern: dashed-grid-light (very subtle texture behind cards) */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(to right, #ddd6cc 1px, transparent 1px),
+              linear-gradient(to bottom, #ddd6cc 1px, transparent 1px)
+            `,
+            backgroundSize: "20px 20px",
+            maskImage: `
+              repeating-linear-gradient(to right, black 0px, black 2px, transparent 2px, transparent 8px),
+              repeating-linear-gradient(to bottom, black 0px, black 2px, transparent 2px, transparent 8px)
+            `,
+            WebkitMaskImage: `
+              repeating-linear-gradient(to right, black 0px, black 2px, transparent 2px, transparent 8px),
+              repeating-linear-gradient(to bottom, black 0px, black 2px, transparent 2px, transparent 8px)
+            `,
+            maskComposite: "intersect",
+            WebkitMaskComposite: "source-in",
+            opacity: 0.5,
+          }}
+        />
         {filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-4">
             <span className="text-6xl animate-pulse-soft select-none">🍪</span>
