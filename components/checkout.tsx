@@ -194,6 +194,7 @@ export function Checkout() {
   };
 
   const handleSendWhatsApp = () => {
+    if (sent) return;
     window.open(`https://wa.me/${SELLER_WHATSAPP}?text=${encodeURIComponent(buildMessage())}`, "_blank");
     setSent(true);
   };
@@ -293,7 +294,7 @@ export function Checkout() {
                 <button
                   onClick={lookupCep}
                   disabled={cepLoading}
-                  className="h-14 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background hover:opacity-80 transition-opacity disabled:opacity-40 shrink-0 flex items-center gap-2"
+                  className="h-14 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40 shrink-0 flex items-center gap-2"
                 >
                   {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
                 </button>
@@ -370,7 +371,7 @@ export function Checkout() {
             </div>
 
             <div className="mt-8">
-              <ActionButton onClick={() => isAddressValid && goTo(2)}>
+              <ActionButton onClick={() => goTo(2)} disabled={!isAddressValid}>
                 Continuar <ArrowRight className="w-4 h-4" />
               </ActionButton>
               {!isAddressValid && (
@@ -397,7 +398,7 @@ export function Checkout() {
                   <button
                     key={opt.id}
                     onClick={() => setPayment(opt.id)}
-                    className="relative w-full p-5 rounded-2xl border-2 flex items-center gap-5 md:flex-col md:items-start md:gap-4 text-left transition-all duration-200 active:scale-[0.98]"
+                    className="relative w-full p-5 rounded-2xl border-2 flex items-center gap-5 md:flex-col md:items-start md:gap-4 text-left transition-all duration-200 cursor-pointer active:scale-[0.98]"
                     style={
                       selected
                         ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
@@ -570,7 +571,7 @@ export function Checkout() {
                   </div>
                   <button
                     onClick={() => goTo(1)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -594,7 +595,7 @@ export function Checkout() {
                   </div>
                   <button
                     onClick={() => goTo(2)}
-                    className="text-muted-foreground hover:text-foreground transition-colors"
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
@@ -654,7 +655,7 @@ export function Checkout() {
               {!sent ? (
                 <button
                   onClick={handleSendWhatsApp}
-                  className="w-full h-16 rounded-2xl font-heading text-lg font-black gap-3 flex items-center justify-center text-white transition-all duration-200 active:scale-[0.97]"
+                  className="w-full h-16 rounded-2xl font-heading text-lg font-black gap-3 flex items-center justify-center text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
                   style={{ backgroundColor: "#25D366" }}
                 >
                   <WhatsAppIcon className="w-6 h-6" />
@@ -673,7 +674,7 @@ export function Checkout() {
                   </div>
                   <button
                     onClick={() => router.push("/")}
-                    className="text-sm font-semibold underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors mt-1"
+                    className="text-sm font-semibold underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer mt-1"
                   >
                     Voltar ao catálogo
                   </button>
@@ -703,7 +704,7 @@ function CheckoutHeader({
       <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
         <button
           onClick={onBack}
-          className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-border hover:border-foreground transition-colors active:scale-95"
+          className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-border hover:border-foreground transition-colors cursor-pointer active:scale-95"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -751,7 +752,7 @@ function ActionButton({
     <button
       onClick={onClick}
       disabled={disabled}
-      className="w-full h-14 rounded-2xl font-heading text-base font-black flex items-center justify-center gap-2 text-white transition-all duration-200 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed"
+      className="w-full h-14 rounded-2xl font-heading text-base font-black flex items-center justify-center gap-2 text-white transition-all duration-200 cursor-pointer active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
       style={{ backgroundColor: "var(--brand-sage)" }}
     >
       {children}

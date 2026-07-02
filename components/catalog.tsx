@@ -170,7 +170,7 @@ function CookieCard({
             <div className="flex items-center gap-1 bg-secondary rounded-full p-1 w-full sm:w-auto justify-between sm:justify-start">
               <button
                 onClick={onRemove}
-                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-border transition-colors active:scale-90"
+                className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-border transition-colors cursor-pointer active:scale-90"
                 aria-label="Remover um"
               >
                 <Minus className="w-3.5 h-3.5" />
@@ -180,7 +180,7 @@ function CookieCard({
               </span>
               <button
                 onClick={onAdd}
-                className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all active:scale-90"
+                className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all cursor-pointer active:scale-90"
                 aria-label="Adicionar um"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -222,7 +222,7 @@ function CartItemRow({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onRemove}
-            className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors active:scale-90"
+            className="w-7 h-7 rounded-full border border-border flex items-center justify-center hover:bg-secondary transition-colors cursor-pointer active:scale-90"
           >
             <Minus className="w-3 h-3" />
           </button>
@@ -231,7 +231,7 @@ function CartItemRow({
           </span>
           <button
             onClick={onAdd}
-            className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all active:scale-90"
+            className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all cursor-pointer active:scale-90"
           >
             <Plus className="w-3 h-3" />
           </button>
@@ -240,7 +240,7 @@ function CartItemRow({
 
       <button
         onClick={onDelete}
-        className="self-start mt-1 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors flex-shrink-0"
+        className="self-start mt-1 w-7 h-7 rounded-full flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-secondary transition-colors cursor-pointer flex-shrink-0"
       >
         <X className="w-3 h-3" />
       </button>
@@ -310,7 +310,7 @@ export function Catalog() {
 
           <button
             onClick={() => setCartOpen(true)}
-            className="hidden sm:flex relative items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all"
+            className="hidden sm:flex relative items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all cursor-pointer"
             aria-label={`Carrinho com ${cartCount} itens`}
           >
             <ShoppingCart className="w-4 h-4 text-foreground" />
@@ -329,7 +329,7 @@ export function Catalog() {
       {/* Floating cart button — mobile only */}
       <button
         onClick={() => setCartOpen(true)}
-        className="sm:hidden fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg active:scale-95 transition-transform"
+        className="sm:hidden fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg cursor-pointer active:scale-95 transition-transform"
         style={{ backgroundColor: "var(--brand-sage)" }}
         aria-label={`Carrinho com ${cartCount} itens`}
       >
@@ -432,7 +432,7 @@ export function Catalog() {
               key={cat}
               onClick={() => setCategory(cat)}
               className={`
-                px-4 py-2 rounded-full text-sm font-medium capitalize transition-all duration-200
+                px-4 py-2 rounded-full text-sm font-medium capitalize transition-all duration-200 cursor-pointer
                 ${
                   category === cat
                     ? "text-white shadow-sm scale-105"
@@ -603,7 +603,7 @@ export function Catalog() {
 
                 <button
                   onClick={clearCart}
-                  className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  className="w-full text-center text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer py-1"
                 >
                   Limpar carrinho
                 </button>
