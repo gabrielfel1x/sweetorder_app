@@ -224,14 +224,22 @@ export function Checkout() {
       />
 
       {/* Progress bar */}
-      <div className="h-[3px] bg-border w-full">
-        <div
-          className="h-full transition-all duration-500 ease-out"
-          style={{ width: `${(step / 3) * 100}%`, backgroundColor: "var(--brand-sage)" }}
-        />
+      <div className="w-full max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-5 pt-4">
+        <div className="h-2 rounded-full bg-border w-full overflow-hidden">
+          <div
+            className="h-full rounded-full transition-all duration-500 ease-out"
+            style={{ width: `${(step / 3) * 100}%`, backgroundColor: "var(--brand-sage)" }}
+          />
+        </div>
       </div>
 
-      <main className="flex-1 w-full max-w-md mx-auto px-5 py-8 overflow-y-auto">
+      <main className="flex-1 w-full max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-5 md:px-8 py-8 overflow-y-auto relative">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-2 right-2 text-4xl opacity-10 select-none rotate-12 hidden md:inline"
+        >
+          🍪
+        </span>
 
         {/* ── Step 1: Endereço ──────────────────────────────────────────────── */}
         {step === 1 && (
@@ -243,11 +251,16 @@ export function Checkout() {
 
             {/* Delivery fee card */}
             <div
-              className="mt-6 bg-card rounded-2xl p-5 border-l-4 border border-border"
-              style={{ borderLeftColor: "var(--brand-sage)", borderLeftWidth: "4px" }}
+              className="mt-6 rounded-3xl p-5"
+              style={{ backgroundColor: "color-mix(in oklch, var(--brand-sage) 12%, var(--card))" }}
             >
-              <div className="flex items-center gap-2 mb-1">
-                <Truck className="w-4 h-4" style={{ color: "var(--brand-sage)" }} />
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--brand-sage)" }}
+                >
+                  <Truck className="w-4 h-4 text-white" />
+                </div>
                 <span className="font-heading font-bold text-sm">Taxa de entrega</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
@@ -311,24 +324,26 @@ export function Checkout() {
                 </div>
               </div>
 
-              <div>
-                <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
-                <Input
-                  placeholder="Apto, bloco, referência..."
-                  value={address.complement}
-                  onChange={(e) => setField("complement", e.target.value)}
-                  className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
-                />
-              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
+                  <Input
+                    placeholder="Apto, bloco, referência..."
+                    value={address.complement}
+                    onChange={(e) => setField("complement", e.target.value)}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  />
+                </div>
 
-              <div>
-                <FieldLabel>Bairro</FieldLabel>
-                <Input
-                  placeholder="Seu bairro"
-                  value={address.neighborhood}
-                  onChange={(e) => setField("neighborhood", e.target.value)}
-                  className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
-                />
+                <div>
+                  <FieldLabel>Bairro</FieldLabel>
+                  <Input
+                    placeholder="Seu bairro"
+                    value={address.neighborhood}
+                    onChange={(e) => setField("neighborhood", e.target.value)}
+                    className="rounded-xl h-12 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-[1fr_80px] gap-3">
@@ -355,7 +370,7 @@ export function Checkout() {
             </div>
 
             <div className="mt-8">
-              <ActionButton onClick={() => goTo(2)} disabled={!isAddressValid}>
+              <ActionButton onClick={() => isAddressValid && goTo(2)}>
                 Continuar <ArrowRight className="w-4 h-4" />
               </ActionButton>
               {!isAddressValid && (
@@ -375,14 +390,14 @@ export function Checkout() {
               subtitle="Escolha a forma de pagamento."
             />
 
-            <div className="mt-6 flex flex-col gap-3">
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
               {PAYMENT_OPTIONS.map((opt) => {
                 const selected = payment === opt.id;
                 return (
                   <button
                     key={opt.id}
                     onClick={() => setPayment(opt.id)}
-                    className="w-full p-5 rounded-2xl border-2 flex items-center gap-5 text-left transition-all duration-200 active:scale-[0.98]"
+                    className="relative w-full p-5 rounded-2xl border-2 flex items-center gap-5 md:flex-col md:items-start md:gap-4 text-left transition-all duration-200 active:scale-[0.98]"
                     style={
                       selected
                         ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
@@ -399,7 +414,7 @@ export function Checkout() {
                     >
                       {opt.icon}
                     </div>
-                    <div className="flex-1">
+                    <div className="flex-1 md:w-full">
                       <div className="flex items-center gap-2.5">
                         <span
                           className="font-heading text-xl font-bold"
@@ -428,7 +443,7 @@ export function Checkout() {
                       </p>
                     </div>
                     <div
-                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0"
+                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 absolute top-4 right-4"
                       style={
                         selected
                           ? { borderColor: "white", backgroundColor: "white" }
@@ -445,7 +460,7 @@ export function Checkout() {
             </div>
 
             {payment === "cash" && (
-              <div className="mt-4 bg-card rounded-2xl p-5 border-2 border-border">
+              <div className="mt-6 bg-card rounded-3xl p-5 border-2 border-border">
                 <FieldLabel>Troco para quanto? <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
                 <Input
                   placeholder="Ex: R$ 100,00"
@@ -458,14 +473,22 @@ export function Checkout() {
 
             {payment === "pix" && (
               <div
-                className="mt-4 bg-card rounded-2xl p-5 border border-border border-l-4"
-                style={{ borderLeftColor: "var(--brand-amber)", borderLeftWidth: "4px" }}
+                className="mt-6 rounded-3xl p-5 flex gap-3"
+                style={{ backgroundColor: "color-mix(in oklch, var(--brand-amber) 12%, var(--card))" }}
               >
-                <p className="font-heading font-bold text-sm mb-1">Como funciona o PIX</p>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  Após enviar o pedido pelo WhatsApp, o vendedor te manda o QR Code do PIX.
-                  O desconto de <strong className="text-foreground">5%</strong> já está no total.
-                </p>
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ backgroundColor: "var(--brand-amber)" }}
+                >
+                  <QrCode className="w-4 h-4 text-white" />
+                </div>
+                <div>
+                  <p className="font-heading font-bold text-sm mb-1">Como funciona o PIX</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    Após enviar o pedido pelo WhatsApp, o vendedor te manda o QR Code do PIX.
+                    O desconto de <strong className="text-foreground">5%</strong> já está no total.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -487,21 +510,26 @@ export function Checkout() {
 
             {/* Warning */}
             <div
-              className="mt-6 bg-card rounded-2xl p-5 border border-border border-l-4"
-              style={{ borderLeftColor: "var(--brand-amber)", borderLeftWidth: "4px" }}
+              className="mt-6 rounded-3xl p-5 flex gap-3"
+              style={{ backgroundColor: "color-mix(in oklch, var(--brand-amber) 12%, var(--card))" }}
             >
-              <div className="flex items-center gap-2 mb-1.5">
-                <AlertTriangle className="w-4 h-4 shrink-0" style={{ color: "var(--brand-amber)" }} />
-                <p className="font-heading font-bold text-sm">Confira todas as informações!</p>
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                style={{ backgroundColor: "var(--brand-amber)" }}
+              >
+                <AlertTriangle className="w-4 h-4 text-white" />
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                O botão abre o WhatsApp com a mensagem pronta. Você ainda precisa tocar em{" "}
-                <strong className="text-foreground">Enviar</strong> para confirmar o pedido com o vendedor.
-              </p>
+              <div>
+                <p className="font-heading font-bold text-sm mb-1">Confira todas as informações!</p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  O botão abre o WhatsApp com a mensagem pronta. Você ainda precisa tocar em{" "}
+                  <strong className="text-foreground">Enviar</strong> para confirmar o pedido com o vendedor.
+                </p>
+              </div>
             </div>
 
             {/* Items */}
-            <div className="mt-5 bg-card border-2 border-border rounded-2xl overflow-hidden">
+            <div className="mt-6 bg-card border-2 border-border rounded-3xl overflow-hidden">
               <div className="px-5 pt-4 pb-3 flex items-center justify-between">
                 <span className="font-heading font-bold text-base">
                   Itens
@@ -533,7 +561,7 @@ export function Checkout() {
             </div>
 
             {/* Address + Payment summary */}
-            <div className="mt-3 grid grid-cols-2 gap-3">
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <div className="bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
@@ -585,7 +613,7 @@ export function Checkout() {
             </div>
 
             {/* Totals */}
-            <div className="mt-3 bg-card border-2 border-border rounded-2xl p-5">
+            <div className="mt-6 bg-card border-2 border-border rounded-3xl p-5">
               <div className="flex flex-col gap-2.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
@@ -622,7 +650,7 @@ export function Checkout() {
             </div>
 
             {/* WhatsApp button */}
-            <div className="mt-5">
+            <div className="mt-8">
               {!sent ? (
                 <button
                   onClick={handleSendWhatsApp}
@@ -672,7 +700,7 @@ function CheckoutHeader({
 }) {
   return (
     <header className="sticky top-0 z-40 bg-background border-b border-border">
-      <div className="max-w-md mx-auto px-5 h-16 flex items-center justify-between">
+      <div className="max-w-md sm:max-w-xl md:max-w-2xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between">
         <button
           onClick={onBack}
           className="w-10 h-10 rounded-xl flex items-center justify-center border-2 border-border hover:border-foreground transition-colors active:scale-95"

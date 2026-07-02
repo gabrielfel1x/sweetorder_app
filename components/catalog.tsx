@@ -270,14 +270,14 @@ export function Catalog() {
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
 
-      {/* ── Pattern: orange-corner-warm (brand amber, page-wide) ────────────── */}
+      {/* ── Pattern: soft-corner-vignette (neutral, page-wide) ──────────────── */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 z-0"
         style={{
           backgroundImage: `
-            radial-gradient(circle 700px at 0% 280px, rgba(245, 158, 11, 0.13), transparent),
-            radial-gradient(circle 700px at 100% 280px, rgba(245, 158, 11, 0.10), transparent)
+            radial-gradient(circle 700px at 0% 280px, rgba(0, 0, 0, 0.035), transparent),
+            radial-gradient(circle 700px at 100% 280px, rgba(0, 0, 0, 0.025), transparent)
           `,
         }}
       />
@@ -304,17 +304,17 @@ export function Catalog() {
               placeholder="Buscar cookies..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 rounded-full bg-secondary border-0 text-sm focus-visible:ring-primary/40 transition-all"
+              className="h-10 pl-10 rounded-full bg-secondary border-0 text-sm focus-visible:ring-primary/40 transition-all"
             />
           </div>
 
           <button
             onClick={() => setCartOpen(true)}
-            className="relative flex items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all"
+            className="hidden sm:flex relative items-center gap-2 rounded-full border border-border px-4 h-10 hover:bg-secondary hover:border-primary/30 transition-all"
             aria-label={`Carrinho com ${cartCount} itens`}
           >
             <ShoppingCart className="w-4 h-4 text-foreground" />
-            <span className="font-heading text-sm font-semibold hidden sm:block">
+            <span className="font-heading text-sm font-semibold">
               Carrinho
             </span>
             {cartCount > 0 && (
@@ -325,6 +325,21 @@ export function Catalog() {
           </button>
         </div>
       </header>
+
+      {/* Floating cart button — mobile only */}
+      <button
+        onClick={() => setCartOpen(true)}
+        className="sm:hidden fixed bottom-5 right-5 z-40 flex items-center justify-center w-14 h-14 rounded-full shadow-lg active:scale-95 transition-transform"
+        style={{ backgroundColor: "var(--brand-sage)" }}
+        aria-label={`Carrinho com ${cartCount} itens`}
+      >
+        <ShoppingCart className="w-6 h-6 text-white" />
+        {cartCount > 0 && (
+          <Badge className="h-5 min-w-5 px-1.5 text-xs font-bold rounded-full absolute -top-1 -right-1 animate-badge-pop">
+            {cartCount}
+          </Badge>
+        )}
+      </button>
 
       <section className="relative max-w-7xl mx-auto w-full px-4 sm:px-6 pt-14 pb-10 overflow-hidden">
 
