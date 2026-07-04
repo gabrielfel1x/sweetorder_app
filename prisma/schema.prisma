@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model StoreSettings {
+  id                      Int      @id @default(1)
+  storeName               String   @default("Lolo Cookies")
+  storeDescription        String   @default("Cookies artesanais feitos com amor, entregues fresquinhos.")
+  slug                    String   @unique @default("loja")
+  email                   String   @default("")
+  whatsappNumber          String   @default("5585992737489")
+  whatsappMessageTemplate String   @default("🍪 *Novo Pedido — {{loja}}*\n\n*Itens do pedido:*\n{{itens}}\n\n*Subtotal:* {{subtotal}}\n*Taxa de entrega:* {{entrega}}\n*💰 Total: {{total}}*\n\n*Pagamento:* {{pagamento}}\n\n*📍 Endereço de entrega:*\n{{endereco}}")
+  freeDeliveryThreshold   Float    @default(50)
+  deliveryFee             Float    @default(8.9)
+  instagramUrl            String   @default("")
+  acceptsPix              Boolean  @default(true)
+  pixKey                  String   @default("")
+  acceptsCash             Boolean  @default(true)
+  acceptsCard             Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+}
+
+model BusinessHourShift {
+  id        String @id @default(cuid())
+  dayOfWeek Int
+  openTime  String
+  closeTime String
+  sortOrder Int    @default(0)
+
+  @@index([dayOfWeek, sortOrder])
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  price       Float
+  category    String
+  visualBg    String
+  visualEmoji String
+  active      Boolean  @default(true)
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([category])
+  @@index([active, sortOrder])
+}

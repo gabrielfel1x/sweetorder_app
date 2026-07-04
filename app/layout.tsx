@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { CartProvider } from "@/lib/cart-context";
+import { getStoreSettings } from "@/lib/settings";
 
 const tomatoGrotesk = localFont({
   src: [
@@ -57,18 +58,20 @@ export const metadata: Metadata = {
   description: "Cookies artesanais feitos com amor, entregues fresquinhos.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const settings = await getStoreSettings();
+
   return (
     <html
       lang="pt-BR"
       className={`${tomatoGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <CartProvider>{children}</CartProvider>
+        <CartProvider settings={settings}>{children}</CartProvider>
       </body>
     </html>
   );

@@ -23,11 +23,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart-context";
-import { cn } from "@/lib/utils";
-
-const SELLER_WHATSAPP = "5585992737489";
-const FREE_DELIVERY_THRESHOLD = 50;
-const DELIVERY_FEE = 8.9;
+import { ActionButton, FieldError, FieldLabel, inputClass } from "@/components/form-kit";
+import { renderWhatsAppTemplate } from "@/lib/whatsapp-template";
+import type { StoreSettingsDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -70,14 +68,12 @@ const PAYMENT_OPTIONS: {
   label: string;
   description: string;
   icon: React.ReactNode;
-  badge?: string;
 }[] = [
   {
     id: "pix",
     label: "PIX",
     description: "Aprovação imediata",
     icon: <QrCode className="w-7 h-7" />,
-    badge: "5% OFF",
   },
   {
     id: "credit",
@@ -102,26 +98,10 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <label className="block text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">
-      {children}
-    </label>
-  );
-}
-
-function FieldError({ children }: { children?: string }) {
-  if (!children) return null;
-  return <p className="mt-1.5 text-xs font-medium text-destructive">{children}</p>;
-}
-
-function inputClass(hasError: boolean, base = "rounded-xl h-12 px-4 py-0 leading-[2.75rem] border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors") {
-  return cn(base, hasError && "border-destructive focus-visible:border-destructive");
-}
-
-export function Checkout() {
+export function Checkout({ settings }: { settings: StoreSettingsDTO }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal } = useCart();
+  const { storeName, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
 
   const [step, setStep] = useState(1);
   const directionRef = useRef<Direction>("forward");
@@ -151,9 +131,6 @@ export function Checkout() {
   const [payment, setPayment] = useState<PaymentMethod>("pix");
   const [change, setChange] = useState("");
   const [sent, setSent] = useState(false);
-
-  const pixDiscount = payment === "pix" ? cartTotal * 0.05 : 0;
-  const finalTotal = orderTotal - pixDiscount;
 
   const goTo = (target: number) => {
     directionRef.current = target > step ? "forward" : "back";
@@ -209,37 +186,37 @@ export function Checkout() {
   };
 
   const buildMessage = () => {
-    const lines: string[] = [];
-    lines.push("🍪 *Novo Pedido — Lolo Cookies*");
-    lines.push("");
-    lines.push("*Itens do pedido:*");
-    for (const entry of cart) {
-      lines.push(`• ${entry.quantity}× ${entry.name} — ${fmt(entry.price * entry.quantity)}`);
-    }
-    lines.push("");
-    lines.push(`*Subtotal:* ${fmt(cartTotal)}`);
-    lines.push(`*Taxa de entrega:* ${delivery === 0 ? "Grátis 🎉" : fmt(delivery)}`);
-    if (pixDiscount > 0) lines.push(`*Desconto PIX (5%):* -${fmt(pixDiscount)}`);
-    lines.push(`*💰 Total: ${fmt(finalTotal)}*`);
-    lines.push("");
+    const itens = cart
+      .map((entry) => `• ${entry.quantity}× ${entry.name} — ${fmt(entry.price * entry.quantity)}`)
+      .join("\n");
+
     const paymentLabels: Record<PaymentMethod, string> = {
-      pix: "PIX (5% de desconto)",
+      pix: "PIX",
       credit: "Cartão de crédito (até 3× sem juros)",
       cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
     };
-    lines.push(`*Pagamento:* ${paymentLabels[payment]}`);
-    lines.push("");
-    lines.push("*📍 Endereço de entrega:*");
-    lines.push(`${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ""}`);
-    lines.push(address.neighborhood);
-    lines.push(`${address.city}/${address.state}`);
-    lines.push(`CEP: ${address.cep}`);
-    return lines.join("\n");
+
+    const endereco = [
+      `${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ""}`,
+      address.neighborhood,
+      `${address.city}/${address.state}`,
+      `CEP: ${address.cep}`,
+    ].join("\n");
+
+    return renderWhatsAppTemplate(whatsappMessageTemplate, {
+      loja: storeName,
+      itens,
+      subtotal: fmt(cartTotal),
+      entrega: delivery === 0 ? "Grátis 🎉" : fmt(delivery),
+      total: fmt(orderTotal),
+      pagamento: paymentLabels[payment],
+      endereco,
+    });
   };
 
   const handleSendWhatsApp = () => {
     if (sent) return;
-    window.open(`https://wa.me/${SELLER_WHATSAPP}?text=${encodeURIComponent(buildMessage())}`, "_blank");
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(buildMessage())}`, "_blank");
     setSent(true);
   };
 
@@ -249,7 +226,7 @@ export function Checkout() {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <CheckoutHeader step={0} totalSteps={3} onBack={() => router.back()} />
+        <CheckoutHeader step={0} totalSteps={3} storeName={storeName} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-7xl select-none">🍪</span>
           <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
@@ -265,6 +242,7 @@ export function Checkout() {
       <CheckoutHeader
         step={step}
         totalSteps={3}
+        storeName={storeName}
         onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
       />
 
@@ -309,16 +287,16 @@ export function Checkout() {
                 <span className="font-heading font-bold text-sm">Taxa de entrega</span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
-                Grátis para pedidos acima de <strong className="text-foreground">{fmt(FREE_DELIVERY_THRESHOLD)}</strong>.
-                Abaixo disso, <strong className="text-foreground">{fmt(DELIVERY_FEE)}</strong>.
+                Grátis para pedidos acima de <strong className="text-foreground">{fmt(freeDeliveryThreshold)}</strong>.
+                Abaixo disso, <strong className="text-foreground">{fmt(deliveryFee)}</strong>.
               </p>
-              {cartTotal >= FREE_DELIVERY_THRESHOLD ? (
+              {cartTotal >= freeDeliveryThreshold ? (
                 <p className="mt-2 text-sm font-bold" style={{ color: "var(--brand-sage)" }}>
                   ✓ Seu pedido já tem entrega grátis!
                 </p>
               ) : (
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Faltam <strong className="text-foreground">{fmt(FREE_DELIVERY_THRESHOLD - cartTotal)}</strong> para entrega grátis.
+                  Faltam <strong className="text-foreground">{fmt(freeDeliveryThreshold - cartTotal)}</strong> para entrega grátis.
                 </p>
               )}
             </div>
@@ -477,18 +455,6 @@ export function Checkout() {
                         >
                           {opt.label}
                         </span>
-                        {opt.badge && (
-                          <span
-                            className="text-xs font-bold px-2.5 py-0.5 rounded-full"
-                            style={
-                              selected
-                                ? { backgroundColor: "rgba(255,255,255,0.22)", color: "white" }
-                                : { backgroundColor: "var(--brand-amber)", color: "white" }
-                            }
-                          >
-                            {opt.badge}
-                          </span>
-                        )}
                       </div>
                       <p
                         className="text-sm mt-0.5"
@@ -541,7 +507,6 @@ export function Checkout() {
                   <p className="font-heading font-bold text-sm mb-1">Como funciona o PIX</p>
                   <p className="text-sm text-muted-foreground leading-relaxed">
                     Após enviar o pedido pelo WhatsApp, o vendedor te manda o QR Code do PIX.
-                    O desconto de <strong className="text-foreground">5%</strong> já está no total.
                   </p>
                 </div>
               </div>
@@ -660,7 +625,7 @@ export function Checkout() {
                   {payment === "cash" && "Dinheiro"}
                 </p>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {payment === "pix" && "5% de desconto"}
+                  {payment === "pix" && "Aprovação imediata"}
                   {payment === "credit" && "Até 3× sem juros"}
                   {payment === "cash" && (change.trim() ? `Troco p/ ${change}` : "Na entrega")}
                 </p>
@@ -683,14 +648,6 @@ export function Checkout() {
                     {delivery === 0 ? "Grátis 🎉" : fmt(delivery)}
                   </span>
                 </div>
-                {pixDiscount > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Desconto PIX (5%)</span>
-                    <span className="font-semibold" style={{ color: "var(--brand-sage)" }}>
-                      -{fmt(pixDiscount)}
-                    </span>
-                  </div>
-                )}
               </div>
               <Separator className="my-4" />
               <div className="flex items-center justify-between">
@@ -699,7 +656,7 @@ export function Checkout() {
                   className="font-heading text-4xl font-black tracking-tight"
                   style={{ color: "var(--brand-amber)" }}
                 >
-                  {fmt(finalTotal)}
+                  {fmt(orderTotal)}
                 </span>
               </div>
             </div>
@@ -747,10 +704,12 @@ export function Checkout() {
 function CheckoutHeader({
   step,
   totalSteps,
+  storeName,
   onBack,
 }: {
   step: number;
   totalSteps: number;
+  storeName: string;
   onBack: () => void;
 }) {
   return (
@@ -763,10 +722,10 @@ function CheckoutHeader({
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <a href="/" className="flex items-center gap-2" aria-label="Lolo Cookies">
+        <a href="/" className="flex items-center gap-2" aria-label={storeName}>
           <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
           <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--brand-sage)" }}>
-            Lolo Cookies
+            {storeName}
           </span>
         </a>
 
@@ -793,23 +752,3 @@ function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
   );
 }
 
-function ActionButton({
-  children,
-  onClick,
-  disabled,
-}: {
-  children: React.ReactNode;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className="w-full h-14 rounded-2xl font-heading text-base font-black flex items-center justify-center gap-2 text-white transition-all duration-200 cursor-pointer active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
-      style={{ backgroundColor: "var(--brand-sage)" }}
-    >
-      {children}
-    </button>
-  );
-}

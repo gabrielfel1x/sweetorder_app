@@ -1,9 +1,10 @@
 "use client";
 
 import { createContext, useContext, useState, ReactNode } from "react";
+import type { StoreSettingsDTO } from "@/lib/types";
 
 export type CookieItem = {
-  id: number;
+  id: string;
   name: string;
   description: string;
   price: number;
@@ -20,19 +21,26 @@ type CartContextType = {
   delivery: number;
   orderTotal: number;
   addToCart: (cookie: CookieItem) => void;
-  removeFromCart: (id: number) => void;
-  deleteFromCart: (id: number) => void;
+  removeFromCart: (id: string) => void;
+  deleteFromCart: (id: string) => void;
   clearCart: () => void;
 };
 
 const CartContext = createContext<CartContextType | null>(null);
 
-export function CartProvider({ children }: { children: ReactNode }) {
+export function CartProvider({
+  children,
+  settings,
+}: {
+  children: ReactNode;
+  settings: StoreSettingsDTO;
+}) {
   const [cart, setCart] = useState<CartEntry[]>([]);
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const delivery = cartTotal >= 50 ? 0 : cartTotal === 0 ? 0 : 8.9;
+  const delivery =
+    cartTotal === 0 || cartTotal >= settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
   const orderTotal = cartTotal + delivery;
 
   const addToCart = (cookie: CookieItem) => {
@@ -46,7 +54,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeFromCart = (id: number) => {
+  const removeFromCart = (id: string) => {
     setCart((prev) => {
       const item = prev.find((i) => i.id === id);
       if (!item) return prev;
@@ -55,7 +63,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const deleteFromCart = (id: number) =>
+  const deleteFromCart = (id: string) =>
     setCart((prev) => prev.filter((i) => i.id !== id));
 
   const clearCart = () => setCart([]);

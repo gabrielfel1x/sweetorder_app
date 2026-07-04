@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   ShoppingCart,
@@ -24,83 +24,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useCart, type CookieItem, type CartEntry } from "@/lib/cart-context";
-
-const COOKIES: CookieItem[] = [
-  {
-    id: 1,
-    name: "Chocolate Chip Clássico",
-    description: "Massa amanteigada com gotas de chocolate belga 70%",
-    price: 12.9,
-    category: "clássicos",
-    visual: { bg: "#F2E0C4", emoji: "🍪" },
-  },
-  {
-    id: 2,
-    name: "Double Chocolate",
-    description: "Massa de cacau intensa com recheio de ganache cremosa",
-    price: 14.9,
-    category: "chocolate",
-    visual: { bg: "#3D1A08", emoji: "🍫" },
-  },
-  {
-    id: 3,
-    name: "Peanut Butter",
-    description: "Cremoso e irresistível com amendoim torrado e flor de sal",
-    price: 13.9,
-    category: "clássicos",
-    visual: { bg: "#D4A84B", emoji: "🥜" },
-  },
-  {
-    id: 4,
-    name: "Matcha White Choco",
-    description: "Matcha japonês premium com gotas de chocolate branco",
-    price: 16.9,
-    category: "especiais",
-    visual: { bg: "#4A7C59", emoji: "🍵" },
-  },
-  {
-    id: 5,
-    name: "Lemon Blueberry",
-    description: "Cítrico e leve com mirtilo fresco e cobertura de açúcar",
-    price: 15.9,
-    category: "especiais",
-    visual: { bg: "#3D5A9A", emoji: "🫐" },
-  },
-  {
-    id: 6,
-    name: "Nutella Stuffed",
-    description: "Cookie recheado com Nutella derretendo no centro",
-    price: 17.9,
-    category: "chocolate",
-    visual: { bg: "#6B3A2A", emoji: "🌰" },
-  },
-  {
-    id: 7,
-    name: "Coconut Sem Glúten",
-    description: "Farinha de amêndoa com coco ralado e baunilha",
-    price: 14.9,
-    category: "sem glúten",
-    visual: { bg: "#E8D5A3", emoji: "🥥" },
-  },
-  {
-    id: 8,
-    name: "Oatmeal & Raisin",
-    description: "Aveia crocante com uvas-passas e canela em pó",
-    price: 12.9,
-    category: "clássicos",
-    visual: { bg: "#C8A96E", emoji: "🌾" },
-  },
-  {
-    id: 9,
-    name: "Red Velvet",
-    description: "Textura aveludada com recheio de cream cheese artesanal",
-    price: 16.9,
-    category: "especiais",
-    visual: { bg: "#8B1A1A", emoji: "❤️" },
-  },
-];
-
-const CATEGORIES = ["todos", "clássicos", "chocolate", "especiais", "sem glúten"];
+import {
+  getBusinessHoursStatus,
+  formatShiftsList,
+  type BusinessHoursStatus,
+} from "@/lib/business-hours-status";
+import type { BusinessHourDayDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -248,24 +177,47 @@ function CartItemRow({
   );
 }
 
-export function Catalog() {
+export function Catalog({
+  products,
+  storeName,
+  freeDeliveryThreshold,
+  businessHours,
+}: {
+  products: CookieItem[];
+  storeName: string;
+  freeDeliveryThreshold: number;
+  businessHours: BusinessHourDayDTO[];
+}) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
   const [cartOpen, setCartOpen] = useState(false);
+  const [hoursStatus, setHoursStatus] = useState<BusinessHoursStatus | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    // Calculado no client (hora local do visitante convertida pro fuso da loja) de propósito,
+    // pra não divergir do HTML gerado no servidor e causar mismatch de hidratação.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setHoursStatus(getBusinessHoursStatus(businessHours));
+  }, [businessHours]);
 
   const { cart, cartCount, cartTotal, delivery, orderTotal, addToCart, removeFromCart, deleteFromCart, clearCart } = useCart();
 
+  const categories = useMemo(
+    () => ["todos", ...Array.from(new Set(products.map((p) => p.category)))],
+    [products]
+  );
+
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return COOKIES.filter(
+    return products.filter(
       (c) =>
         (category === "todos" || c.category === category) &&
         (c.name.toLowerCase().includes(q) || c.description.toLowerCase().includes(q))
     );
-  }, [search, category]);
+  }, [products, search, category]);
 
-  const getQty = (id: number) => cart.find((i) => i.id === id)?.quantity ?? 0;
+  const getQty = (id: string) => cart.find((i) => i.id === id)?.quantity ?? 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-background relative overflow-hidden">
@@ -285,7 +237,7 @@ export function Catalog() {
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <a href="/" className="flex items-center gap-2 shrink-0" aria-label="Lolo Cookies">
+          <a href="/" className="flex items-center gap-2 shrink-0" aria-label={storeName}>
             <Cookie
               className="w-5 h-5 transition-transform duration-500 hover:rotate-12"
               style={{ color: "var(--brand-sage)" }}
@@ -294,7 +246,7 @@ export function Catalog() {
               className="font-heading text-xl font-bold tracking-tight"
               style={{ color: "var(--brand-sage)" }}
             >
-              Lolo Cookies
+              {storeName}
             </span>
           </a>
 
@@ -401,14 +353,39 @@ export function Catalog() {
           Feitos à mão, assados na hora e entregues direto pra você.
         </p>
 
+        {hoursStatus?.hasAnyHours && (
+          <div
+            className="mt-4 flex items-center gap-1.5 text-sm animate-slide-up"
+            style={{ animationDelay: "0.17s" }}
+          >
+            <span
+              className="w-1.5 h-1.5 rounded-full shrink-0"
+              style={{
+                backgroundColor: hoursStatus.isOpenNow ? "var(--brand-sage)" : "var(--muted-foreground)",
+              }}
+            />
+            <span
+              className="font-semibold"
+              style={{ color: hoursStatus.isOpenNow ? "var(--brand-sage)" : "var(--muted-foreground)" }}
+            >
+              {hoursStatus.isOpenNow ? "Aberto agora" : "Fechado agora"}
+            </span>
+            {hoursStatus.todayShifts.length > 0 && (
+              <span className="text-muted-foreground">
+                · hoje {formatShiftsList(hoursStatus.todayShifts)}
+              </span>
+            )}
+          </div>
+        )}
+
         <div
-          className="mt-8 flex items-center gap-6 text-sm text-muted-foreground animate-slide-up"
+          className="mt-8 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground animate-slide-up"
           style={{ animationDelay: "0.22s" }}
         >
           <span className="flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
             <span className="font-heading font-semibold text-foreground">
-              {COOKIES.length}
+              {products.length}
             </span>{" "}
             sabores
           </span>
@@ -418,7 +395,7 @@ export function Catalog() {
             Feito artesanal
           </span>
           <span className="w-px h-4 bg-border hidden sm:block" />
-          <span className="hidden sm:block">Entrega grátis acima de R$ 50</span>
+          <span className="hidden sm:block">Entrega grátis acima de {fmt(freeDeliveryThreshold)}</span>
         </div>
       </section>
 
@@ -427,7 +404,7 @@ export function Catalog() {
         style={{ animationDelay: "0.3s" }}
       >
         <div className="flex gap-2 flex-wrap">
-          {CATEGORIES.map((cat) => (
+          {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setCategory(cat)}
@@ -586,7 +563,7 @@ export function Catalog() {
                     <p className="text-xs text-muted-foreground text-center pt-1">
                       Faltam{" "}
                       <span className="font-semibold text-foreground">
-                        {fmt(50 - cartTotal)}
+                        {fmt(freeDeliveryThreshold - cartTotal)}
                       </span>{" "}
                       para entrega grátis
                     </p>
