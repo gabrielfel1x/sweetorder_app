@@ -1,17 +1,19 @@
 import { redirect } from "next/navigation";
 import { Cookie } from "lucide-react";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
-import { LoginForm } from "@/components/login-form";
+import { SignupForm } from "@/components/signup-form";
+import { CreateStoreForm } from "@/components/create-store-form";
 
 export const metadata = {
-  title: "Entrar — Painel administrativo",
+  title: "Cadastre sua loja — SweetOrder",
 };
 
-export default async function LoginPage() {
+export default async function CadastroPage() {
   const user = await getAuthUser();
+
   if (user) {
     const admin = await getCurrentAdmin();
-    redirect(admin ? "/admin" : "/cadastro");
+    if (admin) redirect("/admin");
   }
 
   return (
@@ -34,21 +36,25 @@ export default async function LoginPage() {
             </span>
           </div>
           <h1 className="font-heading text-4xl font-black tracking-tight leading-tight">
-            Entrar
+            {user ? "Quase lá" : "Crie sua loja"}
           </h1>
           <p className="mt-2 text-muted-foreground">
-            Acesse o painel administrativo da loja.
+            {user
+              ? "Sua conta já existe — falta só configurar a sua loja."
+              : "Monte seu catálogo e comece a vender em minutos."}
           </p>
         </div>
 
-        <LoginForm />
+        {user ? <CreateStoreForm /> : <SignupForm />}
 
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Ainda não tem uma loja?{" "}
-          <a href="/cadastro" className="font-semibold text-foreground hover:underline">
-            Cadastre-se
-          </a>
-        </p>
+        {!user && (
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            Já tem uma loja?{" "}
+            <a href="/login" className="font-semibold text-foreground hover:underline">
+              Entrar
+            </a>
+          </p>
+        )}
       </div>
     </div>
   );

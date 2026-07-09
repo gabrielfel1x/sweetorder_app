@@ -98,7 +98,7 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
-export function Checkout({ settings }: { settings: StoreSettingsDTO }) {
+export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug: string }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal } = useCart();
   const { storeName, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
@@ -226,12 +226,12 @@ export function Checkout({ settings }: { settings: StoreSettingsDTO }) {
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <CheckoutHeader step={0} totalSteps={3} storeName={storeName} onBack={() => router.back()} />
+        <CheckoutHeader step={0} totalSteps={3} storeName={storeName} slug={slug} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-7xl select-none">🍪</span>
           <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
           <p className="text-muted-foreground">Adicione cookies antes de finalizar.</p>
-          <ActionButton onClick={() => router.push("/")}>Ver catálogo</ActionButton>
+          <ActionButton onClick={() => router.push(`/${slug}`)}>Ver catálogo</ActionButton>
         </div>
       </div>
     );
@@ -243,6 +243,7 @@ export function Checkout({ settings }: { settings: StoreSettingsDTO }) {
         step={step}
         totalSteps={3}
         storeName={storeName}
+        slug={slug}
         onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
       />
 
@@ -684,7 +685,7 @@ export function Checkout({ settings }: { settings: StoreSettingsDTO }) {
                     </p>
                   </div>
                   <button
-                    onClick={() => router.push("/")}
+                    onClick={() => router.push(`/${slug}`)}
                     className="text-sm font-semibold underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer mt-1"
                   >
                     Voltar ao catálogo
@@ -705,11 +706,13 @@ function CheckoutHeader({
   step,
   totalSteps,
   storeName,
+  slug,
   onBack,
 }: {
   step: number;
   totalSteps: number;
   storeName: string;
+  slug: string;
   onBack: () => void;
 }) {
   return (
@@ -722,7 +725,7 @@ function CheckoutHeader({
           <ArrowLeft className="w-4 h-4" />
         </button>
 
-        <a href="/" className="flex items-center gap-2" aria-label={storeName}>
+        <a href={`/${slug}`} className="flex items-center gap-2" aria-label={storeName}>
           <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
           <span className="font-heading text-lg font-bold tracking-tight" style={{ color: "var(--brand-sage)" }}>
             {storeName}

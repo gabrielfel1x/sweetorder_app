@@ -178,11 +178,13 @@ function CartItemRow({
 }
 
 export function Catalog({
+  slug,
   products,
   storeName,
   freeDeliveryThreshold,
   businessHours,
 }: {
+  slug: string;
   products: CookieItem[];
   storeName: string;
   freeDeliveryThreshold: number;
@@ -237,7 +239,7 @@ export function Catalog({
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-4">
-          <a href="/" className="flex items-center gap-2 shrink-0" aria-label={storeName}>
+          <a href={`/${slug}`} className="flex items-center gap-2 shrink-0" aria-label={storeName}>
             <Cookie
               className="w-5 h-5 transition-transform duration-500 hover:rotate-12"
               style={{ color: "var(--brand-sage)" }}
@@ -327,15 +329,6 @@ export function Catalog({
         >
           🍫
         </span>
-
-        {/* Logo Lolo Cookies — somente desktop */}
-        <img
-          aria-hidden
-          src="/logo.png"
-          alt=""
-          className="pointer-events-none select-none absolute hidden sm:block sm:w-[320px] sm:right-[2%] sm:top-1/2 sm:-translate-y-1/2"
-          style={{ mixBlendMode: "multiply", zIndex: 1 }}
-        />
 
         <h1
           className="font-heading text-5xl sm:text-6xl lg:text-7xl font-black leading-none tracking-tight text-foreground animate-slide-up"
@@ -572,7 +565,7 @@ export function Catalog({
 
                 <Button
                   className="w-full h-12 rounded-full font-heading text-base font-bold gap-2 active:scale-[0.98] transition-transform"
-                  onClick={() => { setCartOpen(false); router.push("/checkout"); }}
+                  onClick={() => { setCartOpen(false); router.push(`/${slug}/checkout`); }}
                 >
                   Finalizar pedido
                   <ArrowRight className="w-4 h-4" />

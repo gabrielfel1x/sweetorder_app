@@ -53,7 +53,7 @@ export function StoreSettingsForm({
         Personalize sua loja: identidade, contato, horários, entrega e pagamento.
       </p>
 
-      <Tabs defaultValue="geral" className="mt-6 max-w-xl">
+      <Tabs defaultValue="geral" className="mt-6 max-w-3xl">
         <TabsList>
           <TabsTrigger value="geral">Geral</TabsTrigger>
           <TabsTrigger value="contato">Contato</TabsTrigger>

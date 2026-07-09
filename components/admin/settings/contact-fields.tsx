@@ -12,30 +12,32 @@ export function ContactFields({ isPending }: { isPending: boolean }) {
   } = useFormContext<SettingsFormData>();
 
   return (
-    <div className="bg-card border-2 border-border rounded-3xl p-5 flex flex-col gap-4">
-      <div>
-        <FieldLabel>
-          WhatsApp <span className="normal-case font-normal tracking-normal">(com DDI e DDD, só números)</span>
-        </FieldLabel>
-        <Input
-          placeholder="5585999999999"
-          inputMode="numeric"
-          disabled={isPending}
-          className={inputClass(!!errors.whatsappNumber)}
-          {...register("whatsappNumber")}
-        />
-        <FieldError>{errors.whatsappNumber?.message}</FieldError>
-      </div>
+    <div className="bg-card border-2 border-border rounded-3xl p-5 md:p-6 flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <FieldLabel>
+            WhatsApp <span className="normal-case font-normal tracking-normal">(com DDI e DDD, só números)</span>
+          </FieldLabel>
+          <Input
+            placeholder="5585999999999"
+            inputMode="numeric"
+            disabled={isPending}
+            className={inputClass(!!errors.whatsappNumber)}
+            {...register("whatsappNumber")}
+          />
+          <FieldError>{errors.whatsappNumber?.message}</FieldError>
+        </div>
 
-      <div>
-        <FieldLabel>Instagram</FieldLabel>
-        <Input
-          placeholder="https://instagram.com/sualoja"
-          disabled={isPending}
-          className={inputClass(!!errors.instagramUrl)}
-          {...register("instagramUrl")}
-        />
-        <FieldError>{errors.instagramUrl?.message}</FieldError>
+        <div>
+          <FieldLabel>Instagram</FieldLabel>
+          <Input
+            placeholder="https://instagram.com/sualoja"
+            disabled={isPending}
+            className={inputClass(!!errors.instagramUrl)}
+            {...register("instagramUrl")}
+          />
+          <FieldError>{errors.instagramUrl?.message}</FieldError>
+        </div>
       </div>
 
       <div>

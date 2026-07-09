@@ -1,5 +1,6 @@
-import { getStoreSettings } from "@/lib/settings";
+import { getStoreById } from "@/lib/settings";
 import { getBusinessHours } from "@/lib/business-hours";
+import { requireAdmin } from "@/lib/session-helpers";
 import { StoreSettingsForm } from "@/components/admin/store-settings-form";
 
 export const metadata = {
@@ -7,6 +8,10 @@ export const metadata = {
 };
 
 export default async function AdminStorePage() {
-  const [settings, businessHours] = await Promise.all([getStoreSettings(), getBusinessHours()]);
+  const admin = await requireAdmin();
+  const [settings, businessHours] = await Promise.all([
+    getStoreById(admin.storeId),
+    getBusinessHours(admin.storeId),
+  ]);
   return <StoreSettingsForm initialSettings={settings} initialBusinessHours={businessHours} />;
 }

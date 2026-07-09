@@ -1,4 +1,5 @@
 import { getAllProductsForAdmin } from "@/lib/products";
+import { requireAdmin } from "@/lib/session-helpers";
 import { ProductsAdmin } from "@/components/admin/products-admin";
 
 export const metadata = {
@@ -6,6 +7,7 @@ export const metadata = {
 };
 
 export default async function AdminProductsPage() {
-  const products = await getAllProductsForAdmin();
+  const admin = await requireAdmin();
+  const products = await getAllProductsForAdmin(admin.storeId);
   return <ProductsAdmin initialProducts={products} />;
 }

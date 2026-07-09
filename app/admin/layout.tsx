@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Cookie, LogOut, Package, Store } from "lucide-react";
-import { getCurrentAdmin } from "@/lib/session-helpers";
+import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
 import { logoutAction } from "@/app/login/actions";
 
 export const metadata = {
@@ -9,13 +9,16 @@ export const metadata = {
 };
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
+  const user = await getAuthUser();
+  if (!user) redirect("/login");
+
   const admin = await getCurrentAdmin();
-  if (!admin) redirect("/login");
+  if (!admin) redirect("/cadastro");
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-40 bg-background border-b border-border">
-        <div className="max-w-5xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
+        <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/admin" className="flex items-center gap-2 shrink-0">
             <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
             <span
@@ -60,7 +63,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-5 md:px-8 py-8">{children}</main>
+      <main className="flex-1 max-w-6xl mx-auto w-full px-5 md:px-8 py-8">{children}</main>
     </div>
   );
 }

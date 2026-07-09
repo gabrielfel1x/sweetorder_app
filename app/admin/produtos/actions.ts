@@ -22,11 +22,11 @@ export type ProductActionState = { error?: string };
 
 function revalidateProductPaths() {
   revalidatePath("/admin/produtos");
-  revalidatePath("/");
+  revalidatePath("/[slug]", "layout");
 }
 
 export async function createProduct(data: ProductInput): Promise<ProductActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
@@ -34,11 +34,13 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
   const { data: last } = await supabase
     .from("products")
     .select("sort_order")
+    .eq("store_id", admin.storeId)
     .order("sort_order", { ascending: false })
     .limit(1)
     .maybeSingle();
 
   const { error } = await supabase.from("products").insert({
+    store_id: admin.storeId,
     name: parsed.data.name,
     description: parsed.data.description,
     price: parsed.data.price,
@@ -54,7 +56,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
 }
 
 export async function updateProduct(id: string, data: ProductInput): Promise<ProductActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = productSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
@@ -69,7 +71,8 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
       visual_bg: parsed.data.visualBg,
       visual_emoji: parsed.data.visualEmoji,
     })
-    .eq("id", id);
+    .eq("id", id)
+    .eq("store_id", admin.storeId);
   if (error) return { error: "Erro ao atualizar produto" };
 
   revalidateProductPaths();
@@ -77,15 +80,15 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
 }
 
 export async function deleteProduct(id: string) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const supabase = await createClient();
-  await supabase.from("products").delete().eq("id", id);
+  await supabase.from("products").delete().eq("id", id).eq("store_id", admin.storeId);
   revalidateProductPaths();
 }
 
 export async function toggleProductActive(id: string, active: boolean) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const supabase = await createClient();
-  await supabase.from("products").update({ active }).eq("id", id);
+  await supabase.from("products").update({ active }).eq("id", id).eq("store_id", admin.storeId);
   revalidateProductPaths();
 }

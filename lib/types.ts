@@ -12,7 +12,15 @@ export type ProductAdminDTO = ProductDTO & {
   sortOrder: number;
 };
 
+export type StoreListItemDTO = {
+  id: string;
+  slug: string;
+  storeName: string;
+  storeDescription: string;
+};
+
 export type StoreSettingsDTO = {
+  id: string;
   storeName: string;
   storeDescription: string;
   slug: string;

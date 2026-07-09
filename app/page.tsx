@@ -1,21 +1,7 @@
-import { Catalog } from "@/components/catalog";
-import { getActiveProducts } from "@/lib/products";
-import { getStoreSettings } from "@/lib/settings";
-import { getBusinessHours } from "@/lib/business-hours";
+import { StoreDirectory } from "@/components/store-directory";
+import { getAllStores } from "@/lib/settings";
 
 export default async function Home() {
-  const [products, settings, businessHours] = await Promise.all([
-    getActiveProducts(),
-    getStoreSettings(),
-    getBusinessHours(),
-  ]);
-
-  return (
-    <Catalog
-      products={products}
-      storeName={settings.storeName}
-      freeDeliveryThreshold={settings.freeDeliveryThreshold}
-      businessHours={businessHours}
-    />
-  );
+  const stores = await getAllStores();
+  return <StoreDirectory stores={stores} />;
 }

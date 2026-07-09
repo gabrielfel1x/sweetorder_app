@@ -1,19 +1,21 @@
 import { z } from "zod";
 import { ALLOWED_WHATSAPP_PLACEHOLDERS, extractWhatsAppPlaceholders } from "@/lib/whatsapp-template";
 
-const RESERVED_SLUGS = ["admin", "login", "checkout", "api", "loja", "_next"];
+export const RESERVED_SLUGS = ["admin", "login", "cadastro", "api", "_next"];
+
+export const slugSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .min(3, "O slug precisa ter ao menos 3 caracteres")
+  .max(40, "O slug pode ter no máximo 40 caracteres")
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Use apenas letras minúsculas, números e hífen (sem espaços)")
+  .refine((slug) => !RESERVED_SLUGS.includes(slug), "Esse slug é reservado, escolha outro");
 
 export const storeSettingsSchema = z.object({
   storeName: z.string().trim().min(1, "Nome da loja é obrigatório").max(80, "Nome da loja muito longo"),
   storeDescription: z.string().trim().min(1, "Descrição é obrigatória").max(280, "Descrição muito longa"),
-  slug: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .min(3, "O slug precisa ter ao menos 3 caracteres")
-    .max(40, "O slug pode ter no máximo 40 caracteres")
-    .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "Use apenas letras minúsculas, números e hífen (sem espaços)")
-    .refine((slug) => !RESERVED_SLUGS.includes(slug), "Esse slug é reservado, escolha outro"),
+  slug: slugSchema,
   email: z.string().trim().min(1, "E-mail é obrigatório").email("E-mail inválido"),
   whatsappNumber: z
     .string()

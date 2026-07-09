@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import type { BusinessHourDayDTO } from "@/lib/types";
 
-export async function getBusinessHours(): Promise<BusinessHourDayDTO[]> {
+export async function getBusinessHours(storeId: string): Promise<BusinessHourDayDTO[]> {
   const supabase = await createClient();
   const { data: shifts, error } = await supabase
     .from("business_hour_shifts")
     .select("*")
+    .eq("store_id", storeId)
     .order("day_of_week", { ascending: true })
     .order("sort_order", { ascending: true });
 

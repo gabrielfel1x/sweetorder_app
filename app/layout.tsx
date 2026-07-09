@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
-import { CartProvider } from "@/lib/cart-context";
-import { getStoreSettings } from "@/lib/settings";
 
 const tomatoGrotesk = localFont({
   src: [
@@ -54,8 +52,8 @@ const inter = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "SweetOrder — Cookies Artesanais",
-  description: "Cookies artesanais feitos com amor, entregues fresquinhos.",
+  title: "SweetOrder — Encontre sua loja",
+  description: "Descubra lojas artesanais e faça seu pedido, entregue direto pra você.",
 };
 
 export default async function RootLayout({
@@ -63,16 +61,12 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const settings = await getStoreSettings();
-
   return (
     <html
       lang="pt-BR"
       className={`${tomatoGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        <CartProvider settings={settings}>{children}</CartProvider>
-      </body>
+      <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
 }

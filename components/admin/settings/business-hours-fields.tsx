@@ -122,7 +122,7 @@ export function BusinessHoursFields({ initialBusinessHours }: { initialBusinessH
   return (
     <FormProvider {...methods}>
       <form onSubmit={onSubmit} noValidate>
-        <div className="bg-card border-2 border-border rounded-3xl p-5 flex flex-col gap-4">
+        <div className="bg-card border-2 border-border rounded-3xl p-5 md:p-6 flex flex-col gap-4 md:grid md:grid-cols-2 md:gap-x-8">
           {DAY_DISPLAY_ORDER.map((dayOfWeek) => (
             <DayRow key={dayOfWeek} dayIndex={dayOfWeek} isPending={isPending} />
           ))}

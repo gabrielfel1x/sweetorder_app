@@ -1,24 +1,31 @@
 import Link from "next/link";
 import { ArrowRight, Cookie, Layers, Package, Store } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
-import { getCurrentAdmin } from "@/lib/session-helpers";
+import { requireAdmin } from "@/lib/session-helpers";
 
 export default async function AdminDashboardPage() {
-  const admin = await getCurrentAdmin();
+  const admin = await requireAdmin();
   const supabase = await createClient();
 
   const [{ count: totalProducts }, { count: activeProducts }, { data: categoryRows }] =
     await Promise.all([
-      supabase.from("products").select("*", { count: "exact", head: true }),
-      supabase.from("products").select("*", { count: "exact", head: true }).eq("active", true),
-      supabase.from("products").select("category"),
+      supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", admin.storeId),
+      supabase
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("store_id", admin.storeId)
+        .eq("active", true),
+      supabase.from("products").select("category").eq("store_id", admin.storeId),
     ]);
   const categories = new Set((categoryRows ?? []).map((p) => p.category));
 
   return (
     <div>
       <h1 className="font-heading text-3xl font-black tracking-tight">
-        Olá, {admin?.name} 👋
+        Olá, {admin.name} 👋
       </h1>
       <p className="mt-1.5 text-muted-foreground">
         Gerencie os produtos e as informações da sua loja por aqui.

@@ -10,13 +10,13 @@ export type SettingsInput = StoreSettingsFormData;
 export type SettingsActionState = { error?: string };
 
 export async function updateStoreSettings(data: SettingsInput): Promise<SettingsActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = storeSettingsSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
   const supabase = await createClient();
   const { error } = await supabase
-    .from("store_settings")
+    .from("stores")
     .update({
       store_name: parsed.data.storeName,
       store_description: parsed.data.storeDescription,
@@ -32,26 +32,26 @@ export async function updateStoreSettings(data: SettingsInput): Promise<Settings
       accepts_cash: parsed.data.acceptsCash,
       accepts_card: parsed.data.acceptsCard,
     })
-    .eq("id", 1);
+    .eq("id", admin.storeId);
   if (error) return { error: "Erro ao salvar configurações" };
 
   revalidatePath("/admin/loja");
   revalidatePath("/");
-  revalidatePath("/checkout");
-  revalidatePath("/loja/[slug]", "page");
+  revalidatePath("/[slug]", "layout");
   return {};
 }
 
 export type BusinessHoursInput = BusinessHoursFormData;
 
 export async function updateBusinessHours(data: BusinessHoursInput): Promise<SettingsActionState> {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = businessHoursSchema.safeParse(data);
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
   const rows = parsed.data.days.flatMap((day) =>
     day.isOpen
       ? day.shifts.map((shift, sortOrder) => ({
+          store_id: admin.storeId,
           day_of_week: day.dayOfWeek,
           open_time: shift.openTime,
           close_time: shift.closeTime,
@@ -64,7 +64,7 @@ export async function updateBusinessHours(data: BusinessHoursInput): Promise<Set
   const { error: deleteError } = await supabase
     .from("business_hour_shifts")
     .delete()
-    .gte("day_of_week", 0);
+    .eq("store_id", admin.storeId);
   if (deleteError) return { error: "Erro ao salvar horários" };
 
   if (rows.length > 0) {
@@ -74,6 +74,6 @@ export async function updateBusinessHours(data: BusinessHoursInput): Promise<Set
 
   revalidatePath("/admin/loja");
   revalidatePath("/");
-  revalidatePath("/loja/[slug]", "page");
+  revalidatePath("/[slug]", "layout");
   return {};
 }

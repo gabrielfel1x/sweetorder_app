@@ -17,16 +17,30 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
   const origin = typeof window !== "undefined" ? window.location.origin : "";
 
   return (
-    <div className="bg-card border-2 border-border rounded-3xl p-5 flex flex-col gap-4">
-      <div>
-        <FieldLabel>Nome da loja</FieldLabel>
-        <Input
-          placeholder="Lolo Cookies"
-          disabled={isPending}
-          className={inputClass(!!errors.storeName)}
-          {...register("storeName")}
-        />
-        <FieldError>{errors.storeName?.message}</FieldError>
+    <div className="bg-card border-2 border-border rounded-3xl p-5 md:p-6 flex flex-col gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <FieldLabel>Nome da loja</FieldLabel>
+          <Input
+            placeholder="Lolo Cookies"
+            disabled={isPending}
+            className={inputClass(!!errors.storeName)}
+            {...register("storeName")}
+          />
+          <FieldError>{errors.storeName?.message}</FieldError>
+        </div>
+
+        <div>
+          <FieldLabel>E-mail de contato</FieldLabel>
+          <Input
+            type="email"
+            placeholder="contato@sualoja.com"
+            disabled={isPending}
+            className={inputClass(!!errors.email)}
+            {...register("email")}
+          />
+          <FieldError>{errors.email?.message}</FieldError>
+        </div>
       </div>
 
       <div>
@@ -55,21 +69,9 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
         <FieldError>{errors.slug?.message}</FieldError>
         {slug && !errors.slug && (
           <p className="mt-1.5 text-xs text-muted-foreground truncate">
-            {origin || "seudominio.com"}/loja/{slug}
+            {origin || "seudominio.com"}/{slug}
           </p>
         )}
-      </div>
-
-      <div>
-        <FieldLabel>E-mail de contato</FieldLabel>
-        <Input
-          type="email"
-          placeholder="contato@sualoja.com"
-          disabled={isPending}
-          className={inputClass(!!errors.email)}
-          {...register("email")}
-        />
-        <FieldError>{errors.email?.message}</FieldError>
       </div>
     </div>
   );
