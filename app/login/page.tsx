@@ -7,11 +7,25 @@ export const metadata = {
   title: "Entrar — Painel administrativo",
 };
 
-export default async function LoginPage() {
+function safeRedirectTarget(from: string | undefined): string | null {
+  if (!from) return null;
+  if (!from.startsWith("/") || from.startsWith("//")) return null;
+  if (from === "/login") return null;
+  return from;
+}
+
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ from?: string }>;
+}) {
+  const { from } = await searchParams;
+  const safeFrom = safeRedirectTarget(from);
+
   const user = await getAuthUser();
   if (user) {
     const admin = await getCurrentAdmin();
-    redirect(admin ? "/admin" : "/cadastro");
+    redirect(safeFrom ?? (admin ? "/admin" : "/cadastro"));
   }
 
   return (
@@ -41,7 +55,7 @@ export default async function LoginPage() {
           </p>
         </div>
 
-        <LoginForm />
+        <LoginForm from={safeFrom ?? undefined} />
 
         <p className="mt-6 text-center text-sm text-muted-foreground">
           Ainda não tem uma loja?{" "}

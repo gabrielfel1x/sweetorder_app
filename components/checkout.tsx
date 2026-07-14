@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,16 +19,24 @@ import {
   Truck,
   AlertTriangle,
   Pencil,
+  User,
+  Plus,
+  MapPinned,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { useCart } from "@/lib/cart-context";
 import { ActionButton, FieldError, FieldLabel, inputClass } from "@/components/form-kit";
 import { renderWhatsAppTemplate } from "@/lib/whatsapp-template";
+import { useLocalStorageState } from "@/lib/use-local-storage-state";
+import { lookupCustomerAction, saveCustomerOrderAction } from "@/app/[slug]/checkout/actions";
+import type { CustomerLookupResult } from "@/lib/customers";
 import type { StoreSettingsDTO } from "@/lib/types";
 
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const TOTAL_STEPS = 4;
 
 type PaymentMethod = "pix" | "credit" | "cash";
 type Direction = "forward" | "back";
@@ -44,7 +52,7 @@ const addressSchema = z.object({
     .min(1, "Número é obrigatório para prosseguir")
     .regex(/^\d+$/, "Número deve conter apenas dígitos"),
   complement: z.string(),
-  neighborhood: z.string().trim().min(1, "Bairro é obrigatório para prosseguir"),
+  neighborhood: z.string().trim().min(1, "Bairro é obrigatória para prosseguir"),
   city: z.string().trim().min(1, "Cidade é obrigatória para prosseguir"),
   state: z
     .string()
@@ -55,12 +63,56 @@ const addressSchema = z.object({
 
 type AddressForm = z.infer<typeof addressSchema>;
 
+const identityFormSchema = z.object({
+  name: z.string().trim().min(1, "Nome é obrigatório").max(80, "Nome muito longo"),
+  phone: z
+    .string()
+    .min(1, "Telefone é obrigatório")
+    .regex(/^\(\d{2}\) \d{4,5}-\d{4}$/, "Telefone deve ter DDD + número completo"),
+});
+
+type IdentityForm = z.infer<typeof identityFormSchema>;
+
+const EMPTY_ADDRESS: AddressForm = {
+  cep: "",
+  street: "",
+  number: "",
+  complement: "",
+  neighborhood: "",
+  city: "",
+  state: "",
+};
+
 type ViaCepResponse = {
   logradouro: string;
   bairro: string;
   localidade: string;
   uf: string;
   erro?: boolean;
+};
+
+type CheckoutDraft = {
+  step: number;
+  name: string;
+  phone: string;
+  lookupResult: CustomerLookupResult | null;
+  selectedAddressId: string | null;
+  useNewAddress: boolean;
+  address: AddressForm;
+  payment: PaymentMethod;
+  change: string;
+};
+
+const INITIAL_DRAFT: CheckoutDraft = {
+  step: 1,
+  name: "",
+  phone: "",
+  lookupResult: null,
+  selectedAddressId: null,
+  useNewAddress: false,
+  address: EMPTY_ADDRESS,
+  payment: "pix",
+  change: "",
 };
 
 const PAYMENT_OPTIONS: {
@@ -98,39 +150,82 @@ function WhatsAppIcon({ className }: { className?: string }) {
   );
 }
 
+function formatPhone(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 11);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`;
+  if (digits.length <= 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+}
+
 export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug: string }) {
   const router = useRouter();
-  const { cart, cartCount, cartTotal, delivery, orderTotal } = useCart();
+  const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
   const { storeName, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee } = settings;
 
-  const [step, setStep] = useState(1);
+  const [draft, setDraft] = useLocalStorageState<CheckoutDraft>(`checkout:${slug}`, INITIAL_DRAFT);
+
+  const [step, setStep] = useState(() => draft.step);
   const directionRef = useRef<Direction>("forward");
+
+  const [lookupResult, setLookupResult] = useState<CustomerLookupResult | null>(() => draft.lookupResult);
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(() => draft.selectedAddressId);
+  const [useNewAddress, setUseNewAddress] = useState(() => draft.useNewAddress);
+  const [isLookingUp, setIsLookingUp] = useState(false);
+  const [saving, startSaving] = useTransition();
+
+  const {
+    control: identityControl,
+    handleSubmit: handleIdentitySubmit,
+    setValue: setIdentityValue,
+    formState: { errors: identityErrors },
+  } = useForm<IdentityForm>({
+    resolver: zodResolver(identityFormSchema),
+    defaultValues: { name: draft.name, phone: draft.phone ? formatPhone(draft.phone) : "" },
+  });
+  const identity = useWatch({ control: identityControl }) as IdentityForm;
+  const [identityAttempted, setIdentityAttempted] = useState(false);
 
   const {
     control: addressControl,
     handleSubmit: handleAddressSubmit,
     setValue: setAddressValue,
+    reset: resetAddress,
     formState: { errors: addressErrors },
   } = useForm<AddressForm>({
     resolver: zodResolver(addressSchema),
-    defaultValues: {
-      cep: "",
-      street: "",
-      number: "",
-      complement: "",
-      neighborhood: "",
-      city: "",
-      state: "",
-    },
+    defaultValues: draft.address,
   });
   const address = useWatch({ control: addressControl }) as AddressForm;
   const [addressAttempted, setAddressAttempted] = useState(false);
 
   const [cepLoading, setCepLoading] = useState(false);
   const [cepError, setCepError] = useState("");
-  const [payment, setPayment] = useState<PaymentMethod>("pix");
-  const [change, setChange] = useState("");
+  const [payment, setPayment] = useState<PaymentMethod>(() => draft.payment);
+  const [change, setChange] = useState(() => draft.change);
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    setDraft({
+      step,
+      name: identity.name ?? "",
+      phone: (identity.phone ?? "").replace(/\D/g, ""),
+      lookupResult,
+      selectedAddressId,
+      useNewAddress,
+      address,
+      payment,
+      change,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, identity.name, identity.phone, lookupResult, selectedAddressId, useNewAddress, address, payment, change]);
+
+  const effectiveAddress: AddressForm =
+    selectedAddressId && lookupResult
+      ? lookupResult.addresses.find((a) => a.id === selectedAddressId) ?? address
+      : address;
+
+  const showAddressList = !!lookupResult && lookupResult.addresses.length > 0 && !useNewAddress;
 
   const goTo = (target: number) => {
     directionRef.current = target > step ? "forward" : "back";
@@ -140,11 +235,33 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
   const setField = (field: keyof AddressForm, value: string) =>
     setAddressValue(field, value, { shouldValidate: addressAttempted });
 
+  const onIdentityContinue = () =>
+    handleIdentitySubmit(
+      (data) => {
+        const phoneDigits = data.phone.replace(/\D/g, "");
+        setIsLookingUp(true);
+        startSaving(async () => {
+          const result = await lookupCustomerAction(settings.id, phoneDigits);
+          setLookupResult(result);
+          setUseNewAddress(!result || result.addresses.length === 0);
+          setSelectedAddressId(null);
+          setIsLookingUp(false);
+          goTo(2);
+        });
+      },
+      () => setIdentityAttempted(true)
+    )();
+
   const onAddressContinue = () =>
     handleAddressSubmit(
-      () => goTo(2),
+      () => goTo(3),
       () => setAddressAttempted(true)
     )();
+
+  const onSavedAddressContinue = () => {
+    if (!selectedAddressId) return;
+    goTo(3);
+  };
 
   const lookupCep = async () => {
     const clean = address.cep.replace(/\D/g, "");
@@ -185,6 +302,10 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
     setField("state", value.replace(/[^a-zA-Z]/g, "").toUpperCase().slice(0, 2));
   };
 
+  const handlePhoneChange = (value: string) => {
+    setIdentityValue("phone", formatPhone(value), { shouldValidate: identityAttempted });
+  };
+
   const buildMessage = () => {
     const itens = cart
       .map((entry) => `• ${entry.quantity}× ${entry.name} — ${fmt(entry.price * entry.quantity)}`)
@@ -197,10 +318,10 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
     };
 
     const endereco = [
-      `${address.street}, ${address.number}${address.complement ? ` — ${address.complement}` : ""}`,
-      address.neighborhood,
-      `${address.city}/${address.state}`,
-      `CEP: ${address.cep}`,
+      `${effectiveAddress.street}, ${effectiveAddress.number}${effectiveAddress.complement ? ` — ${effectiveAddress.complement}` : ""}`,
+      effectiveAddress.neighborhood,
+      `${effectiveAddress.city}/${effectiveAddress.state}`,
+      `CEP: ${effectiveAddress.cep}`,
     ].join("\n");
 
     return renderWhatsAppTemplate(whatsappMessageTemplate, {
@@ -216,8 +337,29 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
 
   const handleSendWhatsApp = () => {
     if (sent) return;
-    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(buildMessage())}`, "_blank");
-    setSent(true);
+    startSaving(async () => {
+      try {
+        await saveCustomerOrderAction({
+          storeId: settings.id,
+          name: identity.name ?? "",
+          phone: (identity.phone ?? "").replace(/\D/g, ""),
+          addressId: selectedAddressId ?? undefined,
+          newAddress: selectedAddressId ? undefined : address,
+        });
+      } catch {
+        // Salvar cliente/endereço é conveniência para o próximo pedido — não deve
+        // impedir o envio deste pedido pelo WhatsApp.
+      }
+      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(buildMessage())}`, "_blank");
+      setSent(true);
+    });
+  };
+
+  const handleBackToCatalog = () => {
+    clearCart();
+    setDraft(INITIAL_DRAFT);
+    resetAddress(EMPTY_ADDRESS);
+    router.push(`/${slug}`);
   };
 
   const animClass = directionRef.current === "forward" ? "animate-step-forward" : "animate-step-back";
@@ -226,7 +368,7 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
   if (cart.length === 0) {
     return (
       <div className="min-h-screen bg-background flex flex-col">
-        <CheckoutHeader step={0} totalSteps={3} storeName={storeName} slug={slug} onBack={() => router.back()} />
+        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} slug={slug} onBack={() => router.back()} />
         <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
           <span className="text-7xl select-none">🍪</span>
           <h2 className="font-heading text-3xl font-black">Carrinho vazio</h2>
@@ -241,7 +383,7 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
     <div className="min-h-screen bg-background flex flex-col">
       <CheckoutHeader
         step={step}
-        totalSteps={3}
+        totalSteps={TOTAL_STEPS}
         storeName={storeName}
         slug={slug}
         onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
@@ -252,7 +394,7 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
         <div className="h-2 rounded-full bg-border w-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / 3) * 100}%`, backgroundColor: "var(--brand-sage)" }}
+            style={{ width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: "var(--brand-sage)" }}
           />
         </div>
       </div>
@@ -265,12 +407,68 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
           🍪
         </span>
 
-        {/* ── Step 1: Endereço ──────────────────────────────────────────────── */}
+        {/* ── Step 1: Identificação ─────────────────────────────────────────── */}
         {step === 1 && (
           <div key="step-1" className={animClass}>
             <StepTitle
+              title="Quem está pedindo?"
+              subtitle="Informe seu nome e telefone para continuarmos."
+            />
+
+            <div className="mt-6 flex flex-col gap-3">
+              <div>
+                <FieldLabel>Nome</FieldLabel>
+                <Input
+                  placeholder="Seu nome completo"
+                  value={identity.name ?? ""}
+                  onChange={(e) => setIdentityValue("name", e.target.value, { shouldValidate: identityAttempted })}
+                  className={inputClass(!!identityErrors.name)}
+                />
+                <FieldError>{identityErrors.name?.message}</FieldError>
+              </div>
+              <div>
+                <FieldLabel>Telefone / WhatsApp</FieldLabel>
+                <Input
+                  placeholder="(85) 99999-9999"
+                  inputMode="numeric"
+                  value={identity.phone ?? ""}
+                  onChange={(e) => handlePhoneChange(e.target.value)}
+                  className={inputClass(!!identityErrors.phone)}
+                  maxLength={15}
+                />
+                <FieldError>{identityErrors.phone?.message}</FieldError>
+              </div>
+            </div>
+
+            <div className="mt-8">
+              <ActionButton onClick={onIdentityContinue} disabled={isLookingUp}>
+                {isLookingUp ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <>
+                    Continuar <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </ActionButton>
+              {identityAttempted && Object.keys(identityErrors).length > 0 && (
+                <p className="text-center text-xs font-medium text-destructive mt-3">
+                  Preencha todos os campos corretamente
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Step 2: Endereço ──────────────────────────────────────────────── */}
+        {step === 2 && (
+          <div key="step-2" className={animClass}>
+            <StepTitle
               title="Onde entregamos?"
-              subtitle="Informe seu endereço para calcularmos o frete."
+              subtitle={
+                showAddressList
+                  ? "Escolha um endereço salvo ou cadastre um novo."
+                  : "Informe seu endereço para calcularmos o frete."
+              }
             />
 
             {/* Delivery fee card */}
@@ -302,123 +500,220 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
               )}
             </div>
 
-            {/* CEP */}
-            <div className="mt-6">
-              <FieldLabel>CEP</FieldLabel>
-              <div className="flex gap-2">
-                <Input
-                  placeholder="00000-000"
-                  value={address.cep}
-                  onChange={(e) => handleCepChange(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && lookupCep()}
-                  className={inputClass(
-                    !!cepError || !!addressErrors.cep,
-                    "rounded-xl h-12 px-4 py-0 leading-[2.75rem] flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+            {showAddressList ? (
+              <>
+                <div className="mt-6 flex flex-col gap-3">
+                  {lookupResult!.addresses.map((addr) => {
+                    const selected = selectedAddressId === addr.id;
+                    return (
+                      <button
+                        key={addr.id}
+                        onClick={() => setSelectedAddressId(addr.id)}
+                        className="relative w-full p-4 rounded-2xl border-2 flex items-start gap-3 text-left transition-all duration-200 cursor-pointer active:scale-[0.98]"
+                        style={
+                          selected
+                            ? { backgroundColor: "var(--brand-sage)", borderColor: "var(--brand-sage)" }
+                            : { borderColor: "var(--border)", backgroundColor: "var(--card)" }
+                        }
+                      >
+                        <div
+                          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                          style={
+                            selected
+                              ? { backgroundColor: "rgba(255,255,255,0.18)", color: "white" }
+                              : { backgroundColor: "var(--secondary)", color: "var(--muted-foreground)" }
+                          }
+                        >
+                          <MapPinned className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className="font-heading font-bold text-sm"
+                            style={{ color: selected ? "white" : "var(--foreground)" }}
+                          >
+                            {addr.street}, {addr.number}
+                          </p>
+                          <p
+                            className="text-xs mt-0.5"
+                            style={{ color: selected ? "rgba(255,255,255,0.8)" : "var(--muted-foreground)" }}
+                          >
+                            {addr.neighborhood} — {addr.city}/{addr.state}
+                          </p>
+                        </div>
+                        <div
+                          className="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0"
+                          style={
+                            selected
+                              ? { borderColor: "white", backgroundColor: "white" }
+                              : { borderColor: "var(--border)" }
+                          }
+                        >
+                          {selected && (
+                            <Check className="w-3 h-3 stroke-[3]" style={{ color: "var(--brand-sage)" }} />
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => {
+                      setUseNewAddress(true);
+                      setSelectedAddressId(null);
+                    }}
+                    className="w-full p-4 rounded-2xl border-2 border-dashed border-border flex items-center gap-3 text-left transition-colors hover:border-foreground cursor-pointer"
+                  >
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ backgroundColor: "var(--secondary)", color: "var(--muted-foreground)" }}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </div>
+                    <span className="font-heading font-bold text-sm">Cadastrar novo endereço</span>
+                  </button>
+                </div>
+
+                <div className="mt-8">
+                  <ActionButton onClick={onSavedAddressContinue} disabled={!selectedAddressId}>
+                    Continuar <ArrowRight className="w-4 h-4" />
+                  </ActionButton>
+                  {!selectedAddressId && (
+                    <p className="text-center text-xs font-medium text-muted-foreground mt-3">
+                      Escolha um endereço para continuar
+                    </p>
                   )}
-                  maxLength={9}
-                />
-                <button
-                  onClick={lookupCep}
-                  disabled={cepLoading}
-                  className="h-12 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40 shrink-0 flex items-center justify-center gap-2"
-                >
-                  {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
-                </button>
-              </div>
-              <FieldError>{cepError || addressErrors.cep?.message}</FieldError>
-            </div>
-
-            {/* Address fields */}
-            <div className="mt-3 flex flex-col gap-3">
-              <div className="grid grid-cols-[1fr_100px] gap-2">
-                <div>
-                  <FieldLabel>Rua / Avenida</FieldLabel>
-                  <Input
-                    placeholder="Nome da rua"
-                    value={address.street}
-                    onChange={(e) => setField("street", e.target.value)}
-                    className={inputClass(!!addressErrors.street)}
-                  />
-                  <FieldError>{addressErrors.street?.message}</FieldError>
                 </div>
-                <div>
-                  <FieldLabel>Número</FieldLabel>
-                  <Input
-                    placeholder="123"
-                    inputMode="numeric"
-                    value={address.number}
-                    onChange={(e) => handleNumberChange(e.target.value)}
-                    className={inputClass(!!addressErrors.number)}
-                    maxLength={6}
-                  />
-                  <FieldError>{addressErrors.number?.message}</FieldError>
-                </div>
-              </div>
+              </>
+            ) : (
+              <>
+                {!!lookupResult && lookupResult.addresses.length > 0 && (
+                  <button
+                    onClick={() => setUseNewAddress(false)}
+                    className="mt-4 text-sm font-semibold text-foreground hover:underline cursor-pointer"
+                  >
+                    ← Usar um endereço salvo
+                  </button>
+                )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
-                  <Input
-                    placeholder="Apto, bloco, referência..."
-                    value={address.complement}
-                    onChange={(e) => setField("complement", e.target.value)}
-                    className={inputClass(false)}
-                  />
+                {/* CEP */}
+                <div className="mt-6">
+                  <FieldLabel>CEP</FieldLabel>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="00000-000"
+                      value={address.cep}
+                      onChange={(e) => handleCepChange(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && lookupCep()}
+                      className={inputClass(
+                        !!cepError || !!addressErrors.cep,
+                        "rounded-xl h-12 px-4 py-0 leading-[2.75rem] flex-1 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                      )}
+                      maxLength={9}
+                    />
+                    <button
+                      onClick={lookupCep}
+                      disabled={cepLoading}
+                      className="h-12 px-5 rounded-xl font-heading font-bold text-sm border-2 border-foreground bg-foreground text-background cursor-pointer hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:opacity-40 shrink-0 flex items-center justify-center gap-2"
+                    >
+                      {cepLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Buscar <ChevronRight className="w-4 h-4" /></>}
+                    </button>
+                  </div>
+                  <FieldError>{cepError || addressErrors.cep?.message}</FieldError>
                 </div>
 
-                <div>
-                  <FieldLabel>Bairro</FieldLabel>
-                  <Input
-                    placeholder="Seu bairro"
-                    value={address.neighborhood}
-                    onChange={(e) => setField("neighborhood", e.target.value)}
-                    className={inputClass(!!addressErrors.neighborhood)}
-                  />
-                  <FieldError>{addressErrors.neighborhood?.message}</FieldError>
-                </div>
-              </div>
+                {/* Address fields */}
+                <div className="mt-3 flex flex-col gap-3">
+                  <div className="grid grid-cols-[1fr_100px] gap-2">
+                    <div>
+                      <FieldLabel>Rua / Avenida</FieldLabel>
+                      <Input
+                        placeholder="Nome da rua"
+                        value={address.street}
+                        onChange={(e) => setField("street", e.target.value)}
+                        className={inputClass(!!addressErrors.street)}
+                      />
+                      <FieldError>{addressErrors.street?.message}</FieldError>
+                    </div>
+                    <div>
+                      <FieldLabel>Número</FieldLabel>
+                      <Input
+                        placeholder="123"
+                        inputMode="numeric"
+                        value={address.number}
+                        onChange={(e) => handleNumberChange(e.target.value)}
+                        className={inputClass(!!addressErrors.number)}
+                        maxLength={6}
+                      />
+                      <FieldError>{addressErrors.number?.message}</FieldError>
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-[1fr_80px] gap-2">
-                <div>
-                  <FieldLabel>Cidade</FieldLabel>
-                  <Input
-                    placeholder="Cidade"
-                    value={address.city}
-                    onChange={(e) => handleCityChange(e.target.value)}
-                    className={inputClass(!!addressErrors.city)}
-                  />
-                  <FieldError>{addressErrors.city?.message}</FieldError>
-                </div>
-                <div>
-                  <FieldLabel>UF</FieldLabel>
-                  <Input
-                    placeholder="CE"
-                    value={address.state}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                    className={inputClass(!!addressErrors.state)}
-                    maxLength={2}
-                  />
-                  <FieldError>{addressErrors.state?.message}</FieldError>
-                </div>
-              </div>
-            </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div>
+                      <FieldLabel>Complemento <span className="normal-case font-normal tracking-normal">(opcional)</span></FieldLabel>
+                      <Input
+                        placeholder="Apto, bloco, referência..."
+                        value={address.complement}
+                        onChange={(e) => setField("complement", e.target.value)}
+                        className={inputClass(false)}
+                      />
+                    </div>
 
-            <div className="mt-8">
-              <ActionButton onClick={onAddressContinue}>
-                Continuar <ArrowRight className="w-4 h-4" />
-              </ActionButton>
-              {addressAttempted && Object.keys(addressErrors).length > 0 && (
-                <p className="text-center text-xs font-medium text-destructive mt-3">
-                  Preencha todos os campos obrigatórios
-                </p>
-              )}
-            </div>
+                    <div>
+                      <FieldLabel>Bairro</FieldLabel>
+                      <Input
+                        placeholder="Seu bairro"
+                        value={address.neighborhood}
+                        onChange={(e) => setField("neighborhood", e.target.value)}
+                        className={inputClass(!!addressErrors.neighborhood)}
+                      />
+                      <FieldError>{addressErrors.neighborhood?.message}</FieldError>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-[1fr_80px] gap-2">
+                    <div>
+                      <FieldLabel>Cidade</FieldLabel>
+                      <Input
+                        placeholder="Cidade"
+                        value={address.city}
+                        onChange={(e) => handleCityChange(e.target.value)}
+                        className={inputClass(!!addressErrors.city)}
+                      />
+                      <FieldError>{addressErrors.city?.message}</FieldError>
+                    </div>
+                    <div>
+                      <FieldLabel>UF</FieldLabel>
+                      <Input
+                        placeholder="CE"
+                        value={address.state}
+                        onChange={(e) => handleStateChange(e.target.value)}
+                        className={inputClass(!!addressErrors.state)}
+                        maxLength={2}
+                      />
+                      <FieldError>{addressErrors.state?.message}</FieldError>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-8">
+                  <ActionButton onClick={onAddressContinue}>
+                    Continuar <ArrowRight className="w-4 h-4" />
+                  </ActionButton>
+                  {addressAttempted && Object.keys(addressErrors).length > 0 && (
+                    <p className="text-center text-xs font-medium text-destructive mt-3">
+                      Preencha todos os campos obrigatórios
+                    </p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         )}
 
-        {/* ── Step 2: Pagamento ─────────────────────────────────────────────── */}
-        {step === 2 && (
-          <div key="step-2" className={animClass}>
+        {/* ── Step 3: Pagamento ─────────────────────────────────────────────── */}
+        {step === 3 && (
+          <div key="step-3" className={animClass}>
             <StepTitle
               title="Como vai pagar?"
               subtitle="Escolha a forma de pagamento."
@@ -514,16 +809,16 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
             )}
 
             <div className="mt-8">
-              <ActionButton onClick={() => goTo(3)}>
+              <ActionButton onClick={() => goTo(4)}>
                 Continuar <ArrowRight className="w-4 h-4" />
               </ActionButton>
             </div>
           </div>
         )}
 
-        {/* ── Step 3: Revisão ───────────────────────────────────────────────── */}
-        {step === 3 && (
-          <div key="step-3" className={animClass}>
+        {/* ── Step 4: Revisão ───────────────────────────────────────────────── */}
+        {step === 4 && (
+          <div key="step-4" className={animClass}>
             <StepTitle
               title="Tudo certo?"
               subtitle="Revise seu pedido antes de enviar."
@@ -581,13 +876,13 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
               </div>
             </div>
 
-            {/* Address + Payment summary */}
+            {/* Customer + Address + Payment summary */}
             <div className="mt-6 grid grid-cols-2 gap-3">
               <div className="bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
-                    <span className="font-heading font-bold text-xs">Endereço</span>
+                    <User className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
+                    <span className="font-heading font-bold text-xs">Cliente</span>
                   </div>
                   <button
                     onClick={() => goTo(1)}
@@ -596,25 +891,46 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
                     <Pencil className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <p className="text-xs text-foreground font-semibold leading-snug">
-                  {address.street}, {address.number}
+                <p className="text-xs text-foreground font-semibold leading-snug truncate">
+                  {identity.name}
                 </p>
                 <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-                  {address.neighborhood}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {address.city}/{address.state}
+                  {identity.phone}
                 </p>
               </div>
 
               <div className="bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--brand-amber)" }} />
+                    <span className="font-heading font-bold text-xs">Endereço</span>
+                  </div>
+                  <button
+                    onClick={() => goTo(2)}
+                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                  >
+                    <Pencil className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+                <p className="text-xs text-foreground font-semibold leading-snug">
+                  {effectiveAddress.street}, {effectiveAddress.number}
+                </p>
+                <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                  {effectiveAddress.neighborhood}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {effectiveAddress.city}/{effectiveAddress.state}
+                </p>
+              </div>
+
+              <div className="col-span-2 bg-card border-2 border-border rounded-2xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5">
                     <CreditCard className="w-3.5 h-3.5" style={{ color: "var(--brand-sage)" }} />
                     <span className="font-heading font-bold text-xs">Pagamento</span>
                   </div>
                   <button
-                    onClick={() => goTo(2)}
+                    onClick={() => goTo(3)}
                     className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                   >
                     <Pencil className="w-3.5 h-3.5" />
@@ -667,11 +983,18 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
               {!sent ? (
                 <button
                   onClick={handleSendWhatsApp}
-                  className="w-full h-16 rounded-2xl font-heading text-lg font-black gap-3 flex items-center justify-center text-white transition-all duration-200 cursor-pointer active:scale-[0.97]"
+                  disabled={saving}
+                  className="w-full h-16 rounded-2xl font-heading text-lg font-black gap-3 flex items-center justify-center text-white transition-all duration-200 cursor-pointer active:scale-[0.97] disabled:opacity-60 disabled:cursor-not-allowed"
                   style={{ backgroundColor: "#25D366" }}
                 >
-                  <WhatsAppIcon className="w-6 h-6" />
-                  Enviar pedido pelo WhatsApp
+                  {saving ? (
+                    <Loader2 className="w-6 h-6 animate-spin" />
+                  ) : (
+                    <>
+                      <WhatsAppIcon className="w-6 h-6" />
+                      Enviar pedido pelo WhatsApp
+                    </>
+                  )}
                 </button>
               ) : (
                 <div className="border-2 rounded-2xl p-6 text-center flex flex-col items-center gap-3" style={{ borderColor: "#25D366" }}>
@@ -685,7 +1008,7 @@ export function Checkout({ settings, slug }: { settings: StoreSettingsDTO; slug:
                     </p>
                   </div>
                   <button
-                    onClick={() => router.push(`/${slug}`)}
+                    onClick={handleBackToCatalog}
                     className="text-sm font-semibold underline underline-offset-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer mt-1"
                   >
                     Voltar ao catálogo
@@ -754,4 +1077,3 @@ function StepTitle({ title, subtitle }: { title: string; subtitle: string }) {
     </div>
   );
 }
-

@@ -1,7 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, ReactNode } from "react";
 import type { StoreSettingsDTO } from "@/lib/types";
+import { useLocalStorageState } from "@/lib/use-local-storage-state";
 
 export type CookieItem = {
   id: string;
@@ -35,7 +36,7 @@ export function CartProvider({
   children: ReactNode;
   settings: StoreSettingsDTO;
 }) {
-  const [cart, setCart] = useState<CartEntry[]>([]);
+  const [cart, setCart] = useLocalStorageState<CartEntry[]>(`cart:${settings.slug}`, []);
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);

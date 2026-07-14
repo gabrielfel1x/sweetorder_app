@@ -16,7 +16,7 @@ const loginSchema = z.object({
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
-export function LoginForm() {
+export function LoginForm({ from }: { from?: string }) {
   const {
     register,
     handleSubmit,
@@ -38,6 +38,7 @@ export function LoginForm() {
         const formData = new FormData();
         formData.set("email", data.email);
         formData.set("password", data.password);
+        if (from) formData.set("from", from);
         const result = await loginAction({}, formData);
         if (result?.error) setServerError(result.error);
       });

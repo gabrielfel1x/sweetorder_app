@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { ALLOWED_WHATSAPP_PLACEHOLDERS, extractWhatsAppPlaceholders } from "@/lib/whatsapp-template";
 
-export const RESERVED_SLUGS = ["admin", "login", "cadastro", "api", "_next"];
+export const RESERVED_SLUGS = ["admin", "superadmin", "login", "cadastro", "convite", "api", "_next"];
 
 export const slugSchema = z
   .string()

@@ -5,13 +5,12 @@ import { createClient } from "@/lib/supabase/server";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
 import { signUpSchema, createStoreSchema } from "@/lib/schemas/signup";
 
-async function createStoreForCurrentUser(storeName: string, slug: string): Promise<string | undefined> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return "Não autorizado";
-
+export async function createStoreForUser(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  storeName: string,
+  slug: string
+): Promise<string | undefined> {
   const { data: existingSlug } = await supabase
     .from("stores")
     .select("id")
@@ -28,10 +27,20 @@ async function createStoreForCurrentUser(storeName: string, slug: string): Promi
 
   const { error: linkError } = await supabase
     .from("store_admins")
-    .insert({ store_id: store.id, user_id: user.id });
+    .insert({ store_id: store.id, user_id: userId });
   if (linkError) return "Erro ao vincular administrador à loja";
 
   return undefined;
+}
+
+async function createStoreForCurrentUser(storeName: string, slug: string): Promise<string | undefined> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return "Não autorizado";
+
+  return createStoreForUser(supabase, user.id, storeName, slug);
 }
 
 export type SignUpState = { error?: string; info?: string };

@@ -51,3 +51,30 @@ export async function requireAdmin(): Promise<CurrentAdmin> {
   if (!admin) throw new Error("Não autorizado");
   return admin;
 }
+
+export async function getCurrentSuperAdmin(): Promise<AuthUser | null> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return null;
+
+  const { data: superAdmin } = await supabase
+    .from("super_admins")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!superAdmin) return null;
+
+  return {
+    id: user.id,
+    email: user.email ?? "",
+    name: (user.user_metadata?.name as string | undefined) ?? "Admin",
+  };
+}
+
+export async function requireSuperAdmin(): Promise<AuthUser> {
+  const superAdmin = await getCurrentSuperAdmin();
+  if (!superAdmin) throw new Error("Não autorizado");
+  return superAdmin;
+}
