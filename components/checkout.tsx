@@ -364,6 +364,11 @@ export function Checkout({
   const handleSendWhatsApp = () => {
     if (sent) return;
     const message = buildMessage();
+    // Precisa abrir a aba de forma síncrona, dentro do clique do usuário.
+    // Se abrirmos depois do `await submitOrderAction`, o navegador não reconhece
+    // mais como ação do usuário e bloqueia o popup — foi o que causava o botão
+    // dizer "enviado" sem o WhatsApp realmente abrir.
+    const whatsappWindow = window.open("", "_blank");
     startSaving(async () => {
       let result: { ok: boolean; reason?: "closed" | "invalid" } = { ok: true };
       try {
@@ -391,11 +396,17 @@ export function Checkout({
       }
 
       if (!result.ok && result.reason === "closed") {
+        whatsappWindow?.close();
         setBlockedClosed(true);
         return;
       }
 
-      window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, "_blank");
+      const url = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+      if (whatsappWindow) {
+        whatsappWindow.location.href = url;
+      } else {
+        window.open(url, "_blank");
+      }
       setSentSummary({ cart, cartTotal, delivery, orderTotal });
       clearCart();
       setSent(true);
