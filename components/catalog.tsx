@@ -272,9 +272,6 @@ export function Catalog({
               style={{ color: isManuallyClosedToday ? "var(--destructive)" : "var(--primary)" }}
             >
               {storeName}
-              {isManuallyClosedToday && (
-                <span className="ml-1.5 text-xs font-semibold align-middle">(fechada hoje)</span>
-              )}
             </span>
           </a>
 
