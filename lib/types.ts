@@ -19,6 +19,7 @@ export type StoreListItemDTO = {
   storeName: string;
   storeDescription: string;
   brandColor: string;
+  isPublished: boolean;
 };
 
 export type StoreSettingsDTO = {

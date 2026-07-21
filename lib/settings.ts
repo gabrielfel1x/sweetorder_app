@@ -75,8 +75,7 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("stores")
-    .select("id, slug, store_name, store_description, brand_color")
-    .eq("is_published", true)
+    .select("id, slug, store_name, store_description, brand_color, is_published")
     .order("store_name", { ascending: true });
 
   if (error) throw error;
@@ -87,5 +86,6 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
     storeName: row.store_name,
     storeDescription: row.store_description,
     brandColor: row.brand_color,
+    isPublished: row.is_published,
   }));
 }

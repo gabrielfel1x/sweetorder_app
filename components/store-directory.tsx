@@ -11,15 +11,10 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
   const color = store.brandColor || "var(--brand-sage)";
   const initial = store.storeName.trim().charAt(0).toUpperCase() || "?";
   const [logoFailed, setLogoFailed] = useState(false);
+  const isPublished = store.isPublished;
 
-  return (
-    <Link
-      href={`/${store.slug}`}
-      className="group flex flex-col rounded-2xl overflow-hidden border border-border bg-card hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
-      style={{
-        animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.06}s both`,
-      }}
-    >
+  const cardContent = (
+    <>
       <div className="h-1.5 w-full shrink-0" style={{ backgroundColor: color }} />
 
       <div
@@ -43,6 +38,11 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
             onError={() => setLogoFailed(true)}
           />
         )}
+        {!isPublished && (
+          <span className="absolute top-2.5 right-2.5 rounded-full bg-foreground/80 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-background backdrop-blur-sm">
+            Loja em desenvolvimento
+          </span>
+        )}
       </div>
 
       <div className="flex flex-col flex-1 p-5 gap-3">
@@ -57,15 +57,47 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
 
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs text-muted-foreground truncate">/{store.slug}</span>
-          <span
-            className="flex items-center gap-1.5 text-sm font-semibold shrink-0"
-            style={{ color }}
-          >
-            Ver loja
-            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-          </span>
+          {isPublished ? (
+            <span
+              className="flex items-center gap-1.5 text-sm font-semibold shrink-0"
+              style={{ color }}
+            >
+              Ver loja
+              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+            </span>
+          ) : (
+            <span className="text-sm font-semibold shrink-0 text-muted-foreground">
+              Em breve
+            </span>
+          )}
         </div>
       </div>
+    </>
+  );
+
+  if (!isPublished) {
+    return (
+      <div
+        className="flex flex-col rounded-2xl overflow-hidden border border-border bg-card opacity-80 cursor-default"
+        style={{
+          animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.06}s both`,
+        }}
+        aria-disabled="true"
+      >
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/${store.slug}`}
+      className="group flex flex-col rounded-2xl overflow-hidden border border-border bg-card hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
+      style={{
+        animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.06}s both`,
+      }}
+    >
+      {cardContent}
     </Link>
   );
 }
