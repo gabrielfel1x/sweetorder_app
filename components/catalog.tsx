@@ -158,12 +158,18 @@ function CartItemRow({
 }) {
   return (
     <div className="flex items-center gap-4 py-4">
-      <div
-        className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
-        style={{ backgroundColor: entry.visual.bg }}
-      >
-        {entry.visual.emoji}
-      </div>
+      {entry.imageUrl ? (
+        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+          <Image src={entry.imageUrl} alt={entry.name} fill sizes="56px" className="object-cover" />
+        </div>
+      ) : (
+        <div
+          className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl"
+          style={{ backgroundColor: entry.visual.bg }}
+        >
+          {entry.visual.emoji}
+        </div>
+      )}
 
       <div className="flex-1 min-w-0">
         <p className="font-heading text-base font-bold leading-tight truncate">

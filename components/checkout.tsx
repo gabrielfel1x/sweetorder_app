@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useRef, useTransition, createElement } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -1051,12 +1052,18 @@ export function Checkout({
               <div className="divide-y divide-border">
                 {displayCart.map((entry) => (
                   <div key={entry.id} className="flex items-center gap-3 px-5 py-3.5">
-                    <div
-                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl"
-                      style={{ backgroundColor: entry.visual.bg }}
-                    >
-                      {entry.visual.emoji}
-                    </div>
+                    {entry.imageUrl ? (
+                      <div className="relative w-10 h-10 rounded-xl overflow-hidden shrink-0">
+                        <Image src={entry.imageUrl} alt={entry.name} fill sizes="40px" className="object-cover" />
+                      </div>
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 text-xl"
+                        style={{ backgroundColor: entry.visual.bg }}
+                      >
+                        {entry.visual.emoji}
+                      </div>
+                    )}
                     <div className="flex-1 min-w-0">
                       <p className="font-heading font-bold text-sm truncate">{entry.name}</p>
                       <p className="text-xs text-muted-foreground">{entry.quantity}× {fmt(entry.price)}</p>
