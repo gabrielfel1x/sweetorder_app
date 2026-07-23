@@ -86,6 +86,11 @@ const productSchema = z.object({
   visualBg: z.string().trim().regex(/^#[0-9a-fA-F]{6}$/, "Escolha uma cor"),
   visualEmoji: z.string().trim().min(1, "Escolha um emoji").max(4, "Use apenas 1 emoji"),
   imageUrl: z.string().trim().url().nullable().optional(),
+  cardPrice: z.number().positive("Preço deve ser maior que zero").nullable().optional(),
+  installments: z.number().int().min(1, "Mínimo 1 parcela").max(24, "Máximo 24 parcelas").nullable().optional(),
+}).refine((data) => (data.cardPrice == null) === (data.installments == null), {
+  message: "Preencha o preço no cartão e o número de parcelas juntos",
+  path: ["cardPrice"],
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -93,9 +98,11 @@ type ProductFormData = z.infer<typeof productSchema>;
 export function ProductsAdmin({
   initialProducts,
   brandIcon,
+  acceptsInstallments,
 }: {
   initialProducts: ProductAdminDTO[];
   brandIcon?: string;
+  acceptsInstallments: boolean;
 }) {
   const router = useRouter();
   const emojiPresets = useMemo(() => getStoreEmojiPresets(brandIcon), [brandIcon]);
@@ -342,6 +349,7 @@ export function ProductsAdmin({
         onOpenChange={setDialogOpen}
         product={editing}
         emojiPresets={emojiPresets}
+        acceptsInstallments={acceptsInstallments}
         onSaved={(saved) => {
           setProducts((prev) => {
             const exists = prev.some((p) => p.id === saved.id);
@@ -497,12 +505,14 @@ function ProductDialog({
   onOpenChange,
   product,
   emojiPresets,
+  acceptsInstallments,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: ProductAdminDTO | null;
   emojiPresets: string[];
+  acceptsInstallments: boolean;
   onSaved: (product: ProductAdminDTO) => void;
 }) {
   const isEditing = !!product;
@@ -524,6 +534,8 @@ function ProductDialog({
       visualBg: product?.visual.bg ?? COLOR_PRESETS[0],
       visualEmoji: product?.visual.emoji ?? emojiPresets[0],
       imageUrl: product?.imageUrl ?? null,
+      cardPrice: product?.cardPrice ?? null,
+      installments: product?.installments ?? null,
     },
   });
 
@@ -532,6 +544,8 @@ function ProductDialog({
   const bg = watch("visualBg");
   const emoji = watch("visualEmoji");
   const imageUrl = watch("imageUrl");
+  const cardPrice = watch("cardPrice");
+  const installments = watch("installments");
 
   const onSubmit = handleSubmit((data) => {
     setServerError("");
@@ -553,6 +567,8 @@ function ProductDialog({
         category: data.category,
         visual: { bg: data.visualBg, emoji: data.visualEmoji },
         imageUrl: data.imageUrl ?? null,
+        cardPrice: acceptsInstallments ? data.cardPrice ?? null : null,
+        installments: acceptsInstallments ? data.installments ?? null : null,
         active: product?.active ?? true,
         sortOrder: product?.sortOrder ?? 0,
       });
@@ -595,7 +611,7 @@ function ProductDialog({
 
           <div className="mt-3 grid grid-cols-2 gap-3">
             <div>
-              <FieldLabel>Preço</FieldLabel>
+              <FieldLabel>{acceptsInstallments ? "Preço no Pix" : "Preço"}</FieldLabel>
               <Input
                 type="number"
                 step="0.01"
@@ -618,6 +634,47 @@ function ProductDialog({
               <FieldError>{errors.category?.message}</FieldError>
             </div>
           </div>
+
+          {acceptsInstallments && (
+            <div className="mt-3 grid grid-cols-2 gap-3">
+              <div>
+                <FieldLabel>Preço no cartão</FieldLabel>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0,00"
+                  disabled={isPending}
+                  className={inputClass(!!errors.cardPrice)}
+                  {...register("cardPrice", {
+                    setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                  })}
+                />
+                <FieldError>{errors.cardPrice?.message}</FieldError>
+              </div>
+              <div>
+                <FieldLabel>Parcelas</FieldLabel>
+                <Input
+                  type="number"
+                  step="1"
+                  min="1"
+                  max="24"
+                  placeholder="Ex: 3"
+                  disabled={isPending}
+                  className={inputClass(!!errors.installments)}
+                  {...register("installments", {
+                    setValueAs: (v) => (v === "" || v === null ? null : parseInt(v, 10)),
+                  })}
+                />
+                <FieldError>{errors.installments?.message}</FieldError>
+                {!!cardPrice && !!installments && installments > 0 && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {installments}x de {fmt(cardPrice / installments)}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="mt-3">
             <ProductImageField

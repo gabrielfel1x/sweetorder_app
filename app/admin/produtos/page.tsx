@@ -13,5 +13,11 @@ export default async function AdminProductsPage() {
     getAllProductsForAdmin(admin.storeId),
     getStoreById(admin.storeId),
   ]);
-  return <ProductsAdmin initialProducts={products} brandIcon={store.brandIcon} />;
+  return (
+    <ProductsAdmin
+      initialProducts={products}
+      brandIcon={store.brandIcon}
+      acceptsInstallments={store.acceptsInstallments}
+    />
+  );
 }

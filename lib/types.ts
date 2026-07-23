@@ -6,6 +6,8 @@ export type ProductDTO = {
   category: string;
   visual: { bg: string; emoji: string };
   imageUrl: string | null;
+  cardPrice: number | null;
+  installments: number | null;
 };
 
 export type ProductAdminDTO = ProductDTO & {
@@ -37,6 +39,7 @@ export type StoreSettingsDTO = {
   pixKey: string;
   acceptsCash: boolean;
   acceptsCard: boolean;
+  acceptsInstallments: boolean;
   brandColor: string;
   themeColor: string;
   brandIcon: string;
