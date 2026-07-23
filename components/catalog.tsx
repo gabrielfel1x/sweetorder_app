@@ -100,9 +100,9 @@ function CookieCard({
             <span className="font-heading text-2xl font-extrabold text-foreground tracking-tight">
               {fmt(cookie.price)}
             </span>
-            {acceptsInstallments && cookie.installments && cookie.cardPrice != null && (
+            {acceptsInstallments && cookie.cardPrice != null && (
               <p className="mt-0.5 text-xs text-muted-foreground">
-                ou {cookie.installments}x de {fmt(cookie.cardPrice / cookie.installments)} no cartão
+                💳 Parcele no cartão — valor varia conforme as parcelas
               </p>
             )}
           </div>

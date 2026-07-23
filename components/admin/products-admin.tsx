@@ -87,10 +87,6 @@ const productSchema = z.object({
   visualEmoji: z.string().trim().min(1, "Escolha um emoji").max(4, "Use apenas 1 emoji"),
   imageUrl: z.string().trim().url().nullable().optional(),
   cardPrice: z.number().positive("Preço deve ser maior que zero").nullable().optional(),
-  installments: z.number().int().min(1, "Mínimo 1 parcela").max(24, "Máximo 24 parcelas").nullable().optional(),
-}).refine((data) => (data.cardPrice == null) === (data.installments == null), {
-  message: "Preencha o preço no cartão e o número de parcelas juntos",
-  path: ["cardPrice"],
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -535,7 +531,6 @@ function ProductDialog({
       visualEmoji: product?.visual.emoji ?? emojiPresets[0],
       imageUrl: product?.imageUrl ?? null,
       cardPrice: product?.cardPrice ?? null,
-      installments: product?.installments ?? null,
     },
   });
 
@@ -544,8 +539,6 @@ function ProductDialog({
   const bg = watch("visualBg");
   const emoji = watch("visualEmoji");
   const imageUrl = watch("imageUrl");
-  const cardPrice = watch("cardPrice");
-  const installments = watch("installments");
 
   const onSubmit = handleSubmit((data) => {
     setServerError("");
@@ -568,7 +561,6 @@ function ProductDialog({
         visual: { bg: data.visualBg, emoji: data.visualEmoji },
         imageUrl: data.imageUrl ?? null,
         cardPrice: acceptsInstallments ? data.cardPrice ?? null : null,
-        installments: acceptsInstallments ? data.installments ?? null : null,
         active: product?.active ?? true,
         sortOrder: product?.sortOrder ?? 0,
       });
@@ -636,43 +628,24 @@ function ProductDialog({
           </div>
 
           {acceptsInstallments && (
-            <div className="mt-3 grid grid-cols-2 gap-3">
-              <div>
-                <FieldLabel>Preço no cartão</FieldLabel>
-                <Input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0,00"
-                  disabled={isPending}
-                  className={inputClass(!!errors.cardPrice)}
-                  {...register("cardPrice", {
-                    setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
-                  })}
-                />
-                <FieldError>{errors.cardPrice?.message}</FieldError>
-              </div>
-              <div>
-                <FieldLabel>Parcelas</FieldLabel>
-                <Input
-                  type="number"
-                  step="1"
-                  min="1"
-                  max="24"
-                  placeholder="Ex: 3"
-                  disabled={isPending}
-                  className={inputClass(!!errors.installments)}
-                  {...register("installments", {
-                    setValueAs: (v) => (v === "" || v === null ? null : parseInt(v, 10)),
-                  })}
-                />
-                <FieldError>{errors.installments?.message}</FieldError>
-                {!!cardPrice && !!installments && installments > 0 && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {installments}x de {fmt(cardPrice / installments)}
-                  </p>
-                )}
-              </div>
+            <div className="mt-3">
+              <FieldLabel>Preço no cartão</FieldLabel>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="0,00"
+                disabled={isPending}
+                className={inputClass(!!errors.cardPrice)}
+                {...register("cardPrice", {
+                  setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+                })}
+              />
+              <FieldError>{errors.cardPrice?.message}</FieldError>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Valor base no cartão à vista. No checkout, o cliente escolhe em quantas vezes
+                parcelar (até 3x sem juros, acima disso com juros aplicados automaticamente).
+              </p>
             </div>
           )}
 

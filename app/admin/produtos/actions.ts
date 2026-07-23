@@ -18,7 +18,6 @@ const productSchema = z.object({
   visualEmoji: z.string().trim().min(1, "Emoji é obrigatório").max(4, "Use apenas 1 emoji"),
   imageUrl: z.string().trim().url().nullable().optional(),
   cardPrice: z.number().positive("Preço deve ser maior que zero").nullable().optional(),
-  installments: z.number().int().min(1, "Mínimo 1 parcela").max(24, "Máximo 24 parcelas").nullable().optional(),
 });
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -59,19 +58,19 @@ function revalidateProductPaths() {
   revalidatePath("/[slug]", "layout");
 }
 
-async function resolveInstallmentFields(
+async function resolveCardPrice(
   supabase: Awaited<ReturnType<typeof createClient>>,
   storeId: string,
   data: ProductInput
-) {
+): Promise<number | null> {
   const { data: store } = await supabase
     .from("stores")
     .select("accepts_installments")
     .eq("id", storeId)
     .single();
 
-  if (!store?.accepts_installments) return { card_price: null, installments: null };
-  return { card_price: data.cardPrice ?? null, installments: data.installments ?? null };
+  if (!store?.accepts_installments) return null;
+  return data.cardPrice ?? null;
 }
 
 export async function createProduct(data: ProductInput): Promise<ProductActionState> {
@@ -80,7 +79,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Dados inválidos" };
 
   const supabase = await createClient();
-  const [{ data: last }, installmentFields] = await Promise.all([
+  const [{ data: last }, cardPrice] = await Promise.all([
     supabase
       .from("products")
       .select("sort_order")
@@ -88,7 +87,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
       .order("sort_order", { ascending: false })
       .limit(1)
       .maybeSingle(),
-    resolveInstallmentFields(supabase, admin.storeId, parsed.data),
+    resolveCardPrice(supabase, admin.storeId, parsed.data),
   ]);
 
   const { error } = await supabase.from("products").insert({
@@ -101,7 +100,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
     visual_emoji: parsed.data.visualEmoji,
     image_url: parsed.data.imageUrl ?? null,
     sort_order: (last?.sort_order ?? 0) + 1,
-    ...installmentFields,
+    card_price: cardPrice,
   });
   if (error) return { error: "Erro ao criar produto" };
 
@@ -123,7 +122,7 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
     .maybeSingle();
 
   const newImageUrl = parsed.data.imageUrl ?? null;
-  const installmentFields = await resolveInstallmentFields(supabase, admin.storeId, parsed.data);
+  const cardPrice = await resolveCardPrice(supabase, admin.storeId, parsed.data);
 
   const { error } = await supabase
     .from("products")
@@ -135,7 +134,7 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
       visual_bg: parsed.data.visualBg,
       visual_emoji: parsed.data.visualEmoji,
       image_url: newImageUrl,
-      ...installmentFields,
+      card_price: cardPrice,
     })
     .eq("id", id)
     .eq("store_id", admin.storeId);

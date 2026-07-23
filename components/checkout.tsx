@@ -39,6 +39,8 @@ import { getBusinessHoursStatus, type BusinessHoursStatus } from "@/lib/business
 const fmt = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
+const fmtPct = (v: number) => `${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`;
+
 const TOTAL_STEPS = 4;
 
 type PaymentMethod = "pix" | "cash" | "card";
@@ -104,6 +106,7 @@ type CheckoutDraft = {
   address: AddressForm;
   payment: PaymentMethod;
   change: string;
+  installments: number;
 };
 
 const INITIAL_DRAFT: CheckoutDraft = {
@@ -116,6 +119,16 @@ const INITIAL_DRAFT: CheckoutDraft = {
   address: EMPTY_ADDRESS,
   payment: "pix",
   change: "",
+  installments: 1,
+};
+
+const MAX_INSTALLMENTS = 12;
+const FREE_INSTALLMENTS = 3;
+// Percentual de juros total (não ao mês) sobre o valor financiado, por número de parcelas.
+// Até 3x não tem juros; a partir de 4x a taxa sobe de forma escalonada.
+const INSTALLMENT_INTEREST_PCT: Record<number, number> = {
+  1: 0, 2: 0, 3: 0,
+  4: 6.85, 5: 7.57, 6: 8.29, 7: 9.01, 8: 9.73, 9: 10.45, 10: 11.17, 11: 11.89, 12: 12.61,
 };
 
 const PAYMENT_OPTIONS: {
@@ -225,12 +238,16 @@ export function Checkout({
   const [cepError, setCepError] = useState("");
   const [payment, setPayment] = useState<PaymentMethod>(() => draft.payment);
   const [change, setChange] = useState(() => draft.change);
+  const [installments, setInstallments] = useState(() => draft.installments || 1);
   const [sent, setSent] = useState(false);
   const [sentSummary, setSentSummary] = useState<{
     cart: CartEntry[];
     cartTotal: number;
     delivery: number;
     orderTotal: number;
+    installments: number;
+    installmentPct: number;
+    cardAdjusted: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -242,16 +259,28 @@ export function Checkout({
   }, [availablePaymentOptions]);
 
   const isCardAdjusted = payment === "card" && acceptsInstallments;
+  const installmentPct = isCardAdjusted ? INSTALLMENT_INTEREST_PCT[installments] ?? 0 : 0;
+  const installmentMultiplier = 1 + installmentPct / 100;
   const priceForEntry = (entry: CartEntry) =>
-    isCardAdjusted && entry.cardPrice != null ? entry.cardPrice : entry.price;
+    isCardAdjusted ? (entry.cardPrice ?? entry.price) * installmentMultiplier : entry.price;
   const cartTotalForPayment = cart.reduce((s, e) => s + priceForEntry(e) * e.quantity, 0);
   const orderTotalForPayment = cartTotalForPayment + delivery;
+
+  const baseCardCartTotal = cart.reduce((s, e) => s + (e.cardPrice ?? e.price) * e.quantity, 0);
+  const totalForInstallments = (n: number) => {
+    const pct = INSTALLMENT_INTEREST_PCT[n] ?? 0;
+    return baseCardCartTotal * (1 + pct / 100) + delivery;
+  };
 
   const displayCart = sentSummary?.cart ?? cart.map((e) => ({ ...e, price: priceForEntry(e) }));
   const displayCartCount = displayCart.reduce((s, i) => s + i.quantity, 0);
   const displayCartTotal = sentSummary?.cartTotal ?? cartTotalForPayment;
   const displayDelivery = sentSummary?.delivery ?? delivery;
   const displayOrderTotal = sentSummary?.orderTotal ?? orderTotalForPayment;
+  const displayInstallments = sentSummary?.installments ?? installments;
+  const displayInstallmentPct = sentSummary?.installmentPct ?? installmentPct;
+  const displayInstallmentValue = displayOrderTotal / displayInstallments;
+  const displayCardAdjusted = sentSummary?.cardAdjusted ?? isCardAdjusted;
 
   useEffect(() => {
     setDraft({
@@ -264,9 +293,10 @@ export function Checkout({
       address,
       payment,
       change,
+      installments,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, identity.name, identity.phone, lookupResult, selectedAddressId, useNewAddress, address, payment, change]);
+  }, [step, identity.name, identity.phone, lookupResult, selectedAddressId, useNewAddress, address, payment, change, installments]);
 
   const effectiveAddress: AddressForm =
     selectedAddressId && lookupResult
@@ -356,20 +386,15 @@ export function Checkout({
 
   const buildMessage = () => {
     const itens = cart
-      .map((entry) => {
-        const price = priceForEntry(entry);
-        const installmentNote =
-          isCardAdjusted && entry.installments && entry.cardPrice != null
-            ? ` (${entry.installments}x de ${fmt(entry.cardPrice / entry.installments)})`
-            : "";
-        return `• ${entry.quantity}× ${entry.name} — ${fmt(price * entry.quantity)}${installmentNote}`;
-      })
+      .map((entry) => `• ${entry.quantity}× ${entry.name} — ${fmt(priceForEntry(entry) * entry.quantity)}`)
       .join("\n");
 
     const paymentLabels: Record<PaymentMethod, string> = {
       pix: pixKey.trim() ? `PIX — Chave: ${pixKey.trim()}` : "PIX",
       cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
-      card: isCardAdjusted ? "Cartão — valor ajustado para parcelamento" : "Cartão",
+      card: isCardAdjusted
+        ? `Cartão — ${installments}x de ${fmt(orderTotalForPayment / installments)}${installmentPct > 0 ? ` (juros de ${fmtPct(installmentPct)})` : " sem juros"}`
+        : "Cartão",
     };
 
     const endereco = [
@@ -445,6 +470,9 @@ export function Checkout({
         cartTotal: cartTotalForPayment,
         delivery,
         orderTotal: orderTotalForPayment,
+        installments,
+        installmentPct,
+        cardAdjusted: isCardAdjusted,
       });
       clearCart();
       setSent(true);
@@ -936,28 +964,32 @@ export function Checkout({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-heading font-bold text-sm mb-1">Pagamento no cartão</p>
-                  {isCardAdjusted ? (
+                  {acceptsInstallments ? (
                     <>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        Alguns itens têm preço ajustado para pagamento parcelado no cartão.
+                        💳 Parcele sua compra em até {FREE_INSTALLMENTS}x sem juros — o valor total
+                        pode variar de acordo com o número de parcelas escolhido.
                       </p>
-                      <div className="mt-3 flex flex-col gap-1.5">
-                        {cart.map((entry) => {
-                          const price = priceForEntry(entry);
-                          return (
-                            <div key={entry.id} className="flex items-center justify-between gap-2 text-xs">
-                              <span className="text-foreground font-medium truncate">
-                                {entry.quantity}× {entry.name}
-                              </span>
-                              <span className="text-muted-foreground shrink-0">
-                                {fmt(price * entry.quantity)}
-                                {entry.installments && entry.cardPrice != null
-                                  ? ` (${entry.installments}x de ${fmt(entry.cardPrice / entry.installments)})`
-                                  : ""}
-                              </span>
-                            </div>
-                          );
-                        })}
+                      <div className="mt-3">
+                        <FieldLabel>Em quantas vezes?</FieldLabel>
+                        <select
+                          value={installments}
+                          onChange={(e) => setInstallments(Number(e.target.value))}
+                          className={inputClass(
+                            false,
+                            "h-11 w-full rounded-xl border-2 bg-card px-3 focus-visible:ring-0 focus-visible:border-foreground transition-colors"
+                          )}
+                        >
+                          {Array.from({ length: MAX_INSTALLMENTS }, (_, i) => i + 1).map((n) => {
+                            const pct = INSTALLMENT_INTEREST_PCT[n] ?? 0;
+                            const total = totalForInstallments(n);
+                            return (
+                              <option key={n} value={n}>
+                                {n}x de {fmt(total / n)} {pct > 0 ? `(com juros — total ${fmt(total)})` : "sem juros"}
+                              </option>
+                            );
+                          })}
+                        </select>
                       </div>
                     </>
                   ) : (
@@ -1028,11 +1060,6 @@ export function Checkout({
                     <div className="flex-1 min-w-0">
                       <p className="font-heading font-bold text-sm truncate">{entry.name}</p>
                       <p className="text-xs text-muted-foreground">{entry.quantity}× {fmt(entry.price)}</p>
-                      {isCardAdjusted && entry.installments && entry.cardPrice != null && (
-                        <p className="text-xs text-muted-foreground">
-                          {entry.installments}x de {fmt(entry.cardPrice / entry.installments)} no cartão
-                        </p>
-                      )}
                     </div>
                     <span className="font-heading font-bold text-sm shrink-0">
                       {fmt(entry.price * entry.quantity)}
@@ -1110,7 +1137,10 @@ export function Checkout({
                 <p className="text-xs text-muted-foreground mt-0.5">
                   {payment === "pix" && "Aprovação imediata"}
                   {payment === "cash" && (change.trim() ? `Troco p/ ${change}` : "Na entrega")}
-                  {payment === "card" && (isCardAdjusted ? "Preço ajustado (parcelado)" : "Na entrega")}
+                  {payment === "card" &&
+                    (displayCardAdjusted
+                      ? `${displayInstallments}x de ${fmt(displayInstallmentValue)}${displayInstallmentPct > 0 ? " (com juros)" : " sem juros"}`
+                      : "Na entrega")}
                 </p>
               </div>
             </div>
@@ -1122,9 +1152,10 @@ export function Checkout({
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-semibold">{fmt(displayCartTotal)}</span>
                 </div>
-                {isCardAdjusted && displayCart.some((e) => e.installments && e.cardPrice != null) && (
+                {displayCardAdjusted && (
                   <p className="-mt-1.5 text-xs text-muted-foreground">
-                    Valor ajustado para parcelamento no cartão
+                    {displayInstallments}x de {fmt(displayInstallmentValue)}
+                    {displayInstallmentPct > 0 ? ` (juros de ${fmtPct(displayInstallmentPct)})` : " sem juros"}
                   </p>
                 )}
                 <div className="flex items-center justify-between text-sm">
