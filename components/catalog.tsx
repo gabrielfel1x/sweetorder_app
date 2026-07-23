@@ -41,6 +41,7 @@ function CookieCard({
   onAdd,
   onRemove,
   disabled,
+  acceptsInstallments,
 }: {
   cookie: CookieItem;
   quantity: number;
@@ -48,6 +49,7 @@ function CookieCard({
   onAdd: () => void;
   onRemove: () => void;
   disabled?: boolean;
+  acceptsInstallments: boolean;
 }) {
   return (
     <article
@@ -94,9 +96,16 @@ function CookieCard({
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-1">
-          <span className="font-heading text-2xl font-extrabold text-foreground tracking-tight">
-            {fmt(cookie.price)}
-          </span>
+          <div>
+            <span className="font-heading text-2xl font-extrabold text-foreground tracking-tight">
+              {fmt(cookie.price)}
+            </span>
+            {acceptsInstallments && cookie.installments && cookie.cardPrice != null && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                ou {cookie.installments}x de {fmt(cookie.cardPrice / cookie.installments)} no cartão
+              </p>
+            )}
+          </div>
 
           {quantity === 0 ? (
             <Button
@@ -199,6 +208,7 @@ export function Catalog({
   businessHours,
   brandIcon,
   manuallyClosedDate,
+  acceptsInstallments,
 }: {
   slug: string;
   products: CookieItem[];
@@ -207,6 +217,7 @@ export function Catalog({
   businessHours: BusinessHourDayDTO[];
   brandIcon?: string;
   manuallyClosedDate: string | null;
+  acceptsInstallments: boolean;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -501,6 +512,7 @@ export function Catalog({
                 onAdd={() => addToCart(cookie)}
                 onRemove={() => removeFromCart(cookie.id)}
                 disabled={isClosed}
+                acceptsInstallments={acceptsInstallments}
               />
             ))}
           </div>

@@ -1028,6 +1028,11 @@ export function Checkout({
                     <div className="flex-1 min-w-0">
                       <p className="font-heading font-bold text-sm truncate">{entry.name}</p>
                       <p className="text-xs text-muted-foreground">{entry.quantity}× {fmt(entry.price)}</p>
+                      {isCardAdjusted && entry.installments && entry.cardPrice != null && (
+                        <p className="text-xs text-muted-foreground">
+                          {entry.installments}x de {fmt(entry.cardPrice / entry.installments)} no cartão
+                        </p>
+                      )}
                     </div>
                     <span className="font-heading font-bold text-sm shrink-0">
                       {fmt(entry.price * entry.quantity)}
@@ -1117,6 +1122,11 @@ export function Checkout({
                   <span className="text-muted-foreground">Subtotal</span>
                   <span className="font-semibold">{fmt(displayCartTotal)}</span>
                 </div>
+                {isCardAdjusted && displayCart.some((e) => e.installments && e.cardPrice != null) && (
+                  <p className="-mt-1.5 text-xs text-muted-foreground">
+                    Valor ajustado para parcelamento no cartão
+                  </p>
+                )}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Entrega</span>
                   <span

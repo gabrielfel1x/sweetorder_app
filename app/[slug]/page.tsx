@@ -23,6 +23,7 @@ export default async function StorePage({ params }: { params: Promise<{ slug: st
       businessHours={businessHours}
       brandIcon={settings.brandIcon}
       manuallyClosedDate={settings.manuallyClosedDate}
+      acceptsInstallments={settings.acceptsInstallments}
     />
   );
 }
