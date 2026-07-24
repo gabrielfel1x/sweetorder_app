@@ -178,7 +178,11 @@ export function Checkout({
 }) {
   const router = useRouter();
   const { cart, cartCount, cartTotal, delivery, orderTotal, clearCart } = useCart();
-  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee, pixKey, acceptsPix, acceptsCash, acceptsCard, acceptsInstallments } = settings;
+  const { storeName, brandIcon, whatsappNumber, whatsappMessageTemplate, freeDeliveryThreshold, deliveryFee, pixKey, acceptsPix, acceptsCash, acceptsCard, acceptsInstallments, acceptsDelivery } = settings;
+
+  const STEP_SEQUENCE = acceptsDelivery ? [1, 2, 3, 4] : [1, 3, 4];
+  const nextStepFrom = (current: number) => STEP_SEQUENCE[STEP_SEQUENCE.indexOf(current) + 1] ?? current;
+  const prevStepFrom = (current: number) => STEP_SEQUENCE[STEP_SEQUENCE.indexOf(current) - 1] ?? current;
 
   const availablePaymentOptions = useMemo(
     () =>
@@ -325,7 +329,7 @@ export function Checkout({
           setUseNewAddress(!result || result.addresses.length === 0);
           setSelectedAddressId(null);
           setIsLookingUp(false);
-          goTo(2);
+          goTo(nextStepFrom(1));
         });
       },
       () => setIdentityAttempted(true)
@@ -398,18 +402,20 @@ export function Checkout({
         : "Cartão",
     };
 
-    const endereco = [
-      `${effectiveAddress.street}, ${effectiveAddress.number}${effectiveAddress.complement ? ` — ${effectiveAddress.complement}` : ""}`,
-      effectiveAddress.neighborhood,
-      `${effectiveAddress.city}/${effectiveAddress.state}`,
-      `CEP: ${effectiveAddress.cep}`,
-    ].join("\n");
+    const endereco = acceptsDelivery
+      ? [
+          `${effectiveAddress.street}, ${effectiveAddress.number}${effectiveAddress.complement ? ` — ${effectiveAddress.complement}` : ""}`,
+          effectiveAddress.neighborhood,
+          `${effectiveAddress.city}/${effectiveAddress.state}`,
+          `CEP: ${effectiveAddress.cep}`,
+        ].join("\n")
+      : "Retirada no local";
 
     const message = renderWhatsAppTemplate(whatsappMessageTemplate, {
       loja: storeName,
       itens,
       subtotal: fmt(cartTotalForPayment),
-      entrega: delivery === 0 ? "Grátis 🎉" : fmt(delivery),
+      entrega: acceptsDelivery ? (delivery === 0 ? "Grátis 🎉" : fmt(delivery)) : "Retirada no local",
       total: fmt(orderTotalForPayment),
       pagamento: paymentLabels[payment],
       endereco,
@@ -436,8 +442,8 @@ export function Checkout({
           storeId: settings.id,
           name: identity.name ?? "",
           phone: (identity.phone ?? "").replace(/\D/g, ""),
-          address: effectiveAddress,
-          saveNewAddress: selectedAddressId ? undefined : address,
+          address: acceptsDelivery ? effectiveAddress : undefined,
+          saveNewAddress: acceptsDelivery && !selectedAddressId ? address : undefined,
           items: cart.map((entry) => ({
             name: entry.name,
             quantity: entry.quantity,
@@ -502,6 +508,8 @@ export function Checkout({
   };
 
   const animClass = directionRef.current === "forward" ? "animate-step-forward" : "animate-step-back";
+  const stepIndex = STEP_SEQUENCE.indexOf(step);
+  const totalStepsForDisplay = STEP_SEQUENCE.length;
 
   // ── Loja fechada ───────────────────────────────────────────────────────────
   if (!sent && (isClosed || blockedClosed)) {
@@ -557,12 +565,12 @@ export function Checkout({
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <CheckoutHeader
-        step={step}
-        totalSteps={TOTAL_STEPS}
+        step={stepIndex + 1}
+        totalSteps={totalStepsForDisplay}
         storeName={storeName}
         brandIcon={brandIcon}
         slug={slug}
-        onBack={step > 1 ? () => goTo(step - 1) : () => router.back()}
+        onBack={step > 1 ? () => goTo(prevStepFrom(step)) : () => router.back()}
       />
 
       {/* Progress bar */}
@@ -570,7 +578,7 @@ export function Checkout({
         <div className="h-2 rounded-full bg-border w-full overflow-hidden">
           <div
             className="h-full rounded-full transition-all duration-500 ease-out"
-            style={{ width: `${(step / TOTAL_STEPS) * 100}%`, backgroundColor: "var(--primary)" }}
+            style={{ width: `${((stepIndex + 1) / totalStepsForDisplay) * 100}%`, backgroundColor: "var(--primary)" }}
           />
         </div>
       </div>
@@ -636,7 +644,7 @@ export function Checkout({
         )}
 
         {/* ── Step 2: Endereço ──────────────────────────────────────────────── */}
-        {step === 2 && (
+        {step === 2 && acceptsDelivery && (
           <div key="step-2" className={animClass}>
             <StepTitle
               title="Onde entregamos?"
@@ -1125,29 +1133,40 @@ export function Checkout({
                 </p>
               </div>
 
-              <div className="bg-card border-2 border-border rounded-2xl p-4">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
-                    <span className="font-heading font-bold text-xs">Endereço</span>
+              {acceptsDelivery ? (
+                <div className="bg-card border-2 border-border rounded-2xl p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-1.5">
+                      <MapPin className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
+                      <span className="font-heading font-bold text-xs">Endereço</span>
+                    </div>
+                    <button
+                      onClick={() => goTo(2)}
+                      className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => goTo(2)}
-                    className="text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
+                  <p className="text-xs text-foreground font-semibold leading-snug">
+                    {effectiveAddress.street}, {effectiveAddress.number}
+                  </p>
+                  <p className="text-xs text-muted-foreground leading-snug mt-0.5">
+                    {effectiveAddress.neighborhood}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {effectiveAddress.city}/{effectiveAddress.state}
+                  </p>
                 </div>
-                <p className="text-xs text-foreground font-semibold leading-snug">
-                  {effectiveAddress.street}, {effectiveAddress.number}
-                </p>
-                <p className="text-xs text-muted-foreground leading-snug mt-0.5">
-                  {effectiveAddress.neighborhood}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {effectiveAddress.city}/{effectiveAddress.state}
-                </p>
-              </div>
+              ) : (
+                <div className="bg-card border-2 border-border rounded-2xl p-4">
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <MapPin className="w-3.5 h-3.5" style={{ color: "var(--primary)" }} />
+                    <span className="font-heading font-bold text-xs">Retirada</span>
+                  </div>
+                  <p className="text-xs text-foreground font-semibold leading-snug">Retirada no local</p>
+                  <p className="text-xs text-muted-foreground leading-snug mt-0.5">Combine o horário com a loja</p>
+                </div>
+              )}
 
               <div className="col-span-2 bg-card border-2 border-border rounded-2xl p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -1191,15 +1210,17 @@ export function Checkout({
                     {displayInstallmentPct > 0 ? ` (juros de ${fmtPct(displayInstallmentPct)})` : " sem juros"}
                   </p>
                 )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Entrega</span>
-                  <span
-                    className="font-semibold"
-                    style={{ color: displayDelivery === 0 ? "var(--primary)" : "var(--foreground)" }}
-                  >
-                    {displayDelivery === 0 ? "Grátis 🎉" : fmt(displayDelivery)}
-                  </span>
-                </div>
+                {acceptsDelivery && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-muted-foreground">Entrega</span>
+                    <span
+                      className="font-semibold"
+                      style={{ color: displayDelivery === 0 ? "var(--primary)" : "var(--foreground)" }}
+                    >
+                      {displayDelivery === 0 ? "Grátis 🎉" : fmt(displayDelivery)}
+                    </span>
+                  </div>
+                )}
               </div>
               <Separator className="my-4" />
               <div className="flex items-center justify-between">

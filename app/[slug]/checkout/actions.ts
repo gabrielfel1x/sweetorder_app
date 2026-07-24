@@ -49,7 +49,7 @@ export async function submitOrderAction(params: {
   storeId: string;
   name: string;
   phone: string;
-  address: OrderAddressSnapshot;
+  address?: OrderAddressSnapshot;
   saveNewAddress?: NewAddressInput;
   items: OrderItemSnapshot[];
   stockItems: { productId: string; quantity: number }[];

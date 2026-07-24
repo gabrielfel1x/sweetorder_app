@@ -20,7 +20,7 @@ export type OrderAddressSnapshot = {
 export type OrderDTO = {
   id: string;
   items: OrderItemSnapshot[];
-  address: OrderAddressSnapshot;
+  address: OrderAddressSnapshot | null;
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -33,7 +33,7 @@ export async function createOrder(params: {
   storeId: string;
   customerId: string;
   items: OrderItemSnapshot[];
-  address: OrderAddressSnapshot;
+  address?: OrderAddressSnapshot;
   subtotal: number;
   deliveryFee: number;
   total: number;
@@ -45,7 +45,7 @@ export async function createOrder(params: {
     store_id: params.storeId,
     customer_id: params.customerId,
     items: params.items,
-    address: params.address,
+    address: params.address ?? null,
     subtotal: params.subtotal,
     delivery_fee: params.deliveryFee,
     total: params.total,

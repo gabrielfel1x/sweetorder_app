@@ -43,8 +43,11 @@ export function CartProvider({
 
   const cartCount = cart.reduce((s, i) => s + i.quantity, 0);
   const cartTotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const delivery =
-    cartTotal === 0 || cartTotal >= settings.freeDeliveryThreshold ? 0 : settings.deliveryFee;
+  const delivery = !settings.acceptsDelivery
+    ? 0
+    : cartTotal === 0 || cartTotal >= settings.freeDeliveryThreshold
+      ? 0
+      : settings.deliveryFee;
   const orderTotal = cartTotal + delivery;
 
   const addToCart = (cookie: CookieItem) => {

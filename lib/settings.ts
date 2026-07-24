@@ -18,6 +18,7 @@ function mapStoreRow(row: {
   accepts_cash: boolean;
   accepts_card: boolean;
   accepts_installments: boolean;
+  accepts_delivery: boolean;
   brand_color: string;
   theme_color: string;
   brand_icon: string;
@@ -41,6 +42,7 @@ function mapStoreRow(row: {
     acceptsCash: row.accepts_cash,
     acceptsCard: row.accepts_card,
     acceptsInstallments: row.accepts_installments,
+    acceptsDelivery: row.accepts_delivery,
     brandColor: row.brand_color,
     themeColor: row.theme_color,
     brandIcon: row.brand_icon,

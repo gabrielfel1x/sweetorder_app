@@ -41,6 +41,7 @@ export type StoreSettingsDTO = {
   acceptsCash: boolean;
   acceptsCard: boolean;
   acceptsInstallments: boolean;
+  acceptsDelivery: boolean;
   brandColor: string;
   themeColor: string;
   brandIcon: string;

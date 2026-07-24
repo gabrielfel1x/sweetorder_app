@@ -148,13 +148,20 @@ export function CustomerOrders({
                     ))}
                   </div>
                   <div className="border-t border-border px-5 py-3 flex flex-col gap-1.5">
-                    <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
-                      <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                      <span>
-                        {order.address.street}, {order.address.number} — {order.address.neighborhood},{" "}
-                        {order.address.city}/{order.address.state}
-                      </span>
-                    </div>
+                    {order.address ? (
+                      <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                        <span>
+                          {order.address.street}, {order.address.number} — {order.address.neighborhood},{" "}
+                          {order.address.city}/{order.address.state}
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
+                        <span>Retirada no local</span>
+                      </div>
+                    )}
                     <p className="text-xs text-muted-foreground">
                       Pagamento: {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
                       {order.paymentNote ? ` — troco para ${order.paymentNote}` : ""}
