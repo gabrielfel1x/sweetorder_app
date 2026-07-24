@@ -9,6 +9,7 @@ import {
 } from "@/lib/customers";
 import {
   createOrder,
+  decrementProductsStock,
   findOrdersByPhone,
   type OrderDTO,
   type OrderItemSnapshot,
@@ -51,12 +52,13 @@ export async function submitOrderAction(params: {
   address: OrderAddressSnapshot;
   saveNewAddress?: NewAddressInput;
   items: OrderItemSnapshot[];
+  stockItems: { productId: string; quantity: number }[];
   subtotal: number;
   deliveryFee: number;
   total: number;
   paymentMethod: string;
   paymentNote?: string;
-}): Promise<{ ok: boolean; reason?: "closed" | "invalid" }> {
+}): Promise<{ ok: boolean; reason?: "closed" | "invalid" | "out_of_stock" }> {
   const identity = parseIdentity(params.name, params.phone);
   if (!identity || params.items.length === 0) return { ok: false, reason: "invalid" };
 
@@ -68,6 +70,9 @@ export async function submitOrderAction(params: {
   if (hoursStatus.isManuallyClosedToday || (hoursStatus.hasAnyHours && !hoursStatus.isOpenNow)) {
     return { ok: false, reason: "closed" };
   }
+
+  const stockResult = await decrementProductsStock(params.stockItems);
+  if (!stockResult.ok) return { ok: false, reason: "out_of_stock" };
 
   try {
     const customerId = await upsertCustomer({

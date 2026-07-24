@@ -87,6 +87,7 @@ const productSchema = z.object({
   visualEmoji: z.string().trim().min(1, "Escolha um emoji").max(4, "Use apenas 1 emoji"),
   imageUrl: z.string().trim().url().nullable().optional(),
   cardPrice: z.number().positive("Preço deve ser maior que zero").nullable().optional(),
+  stockQuantity: z.number().int().min(0, "Quantidade não pode ser negativa").nullable().optional(),
 });
 
 type ProductFormData = z.infer<typeof productSchema>;
@@ -261,6 +262,14 @@ export function ProductsAdmin({
                     <Badge variant="secondary" className="capitalize rounded-full">
                       {product.category}
                     </Badge>
+                    {product.stockQuantity !== null && (
+                      <Badge
+                        variant={product.stockQuantity === 0 ? "destructive" : "outline"}
+                        className="rounded-full"
+                      >
+                        {product.stockQuantity === 0 ? "Esgotado" : `Estoque: ${product.stockQuantity}`}
+                      </Badge>
+                    )}
                     <span className="font-semibold text-sm">{fmt(product.price)}</span>
                   </div>
                   <Switch
@@ -298,9 +307,19 @@ export function ProductsAdmin({
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="secondary" className="capitalize rounded-full">
-                        {product.category}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="secondary" className="capitalize rounded-full">
+                          {product.category}
+                        </Badge>
+                        {product.stockQuantity !== null && (
+                          <Badge
+                            variant={product.stockQuantity === 0 ? "destructive" : "outline"}
+                            className="rounded-full"
+                          >
+                            {product.stockQuantity === 0 ? "Esgotado" : `Estoque: ${product.stockQuantity}`}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="font-semibold">{fmt(product.price)}</TableCell>
                     <TableCell>
@@ -531,6 +550,7 @@ function ProductDialog({
       visualEmoji: product?.visual.emoji ?? emojiPresets[0],
       imageUrl: product?.imageUrl ?? null,
       cardPrice: product?.cardPrice ?? null,
+      stockQuantity: product?.stockQuantity ?? null,
     },
   });
 
@@ -561,6 +581,7 @@ function ProductDialog({
         visual: { bg: data.visualBg, emoji: data.visualEmoji },
         imageUrl: data.imageUrl ?? null,
         cardPrice: acceptsInstallments ? data.cardPrice ?? null : null,
+        stockQuantity: data.stockQuantity ?? null,
         active: product?.active ?? true,
         sortOrder: product?.sortOrder ?? 0,
       });
@@ -625,6 +646,27 @@ function ProductDialog({
               />
               <FieldError>{errors.category?.message}</FieldError>
             </div>
+          </div>
+
+          <div className="mt-3">
+            <FieldLabel>Estoque de hoje (opcional)</FieldLabel>
+            <Input
+              type="number"
+              step="1"
+              min="0"
+              placeholder="Deixe em branco para ilimitado"
+              disabled={isPending}
+              className={inputClass(!!errors.stockQuantity)}
+              {...register("stockQuantity", {
+                setValueAs: (v) => (v === "" || v === null ? null : Number(v)),
+              })}
+            />
+            <FieldError>{errors.stockQuantity?.message}</FieldError>
+            <p className="mt-1.5 text-xs text-muted-foreground">
+              Quantidade disponível para vender hoje. Deixe em branco se não quiser controlar
+              estoque desse produto. Quando chegar a 0, ele aparece como &quot;Esgotado&quot;
+              para os clientes. O número não reseta sozinho — atualize manualmente todos os dias.
+            </p>
           </div>
 
           {acceptsInstallments && (

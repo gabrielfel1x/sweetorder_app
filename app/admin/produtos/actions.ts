@@ -18,6 +18,12 @@ const productSchema = z.object({
   visualEmoji: z.string().trim().min(1, "Emoji é obrigatório").max(4, "Use apenas 1 emoji"),
   imageUrl: z.string().trim().url().nullable().optional(),
   cardPrice: z.number().positive("Preço deve ser maior que zero").nullable().optional(),
+  stockQuantity: z.coerce
+    .number()
+    .int("Quantidade deve ser um número inteiro")
+    .min(0, "Quantidade não pode ser negativa")
+    .nullable()
+    .optional(),
 });
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -101,6 +107,7 @@ export async function createProduct(data: ProductInput): Promise<ProductActionSt
     image_url: parsed.data.imageUrl ?? null,
     sort_order: (last?.sort_order ?? 0) + 1,
     card_price: cardPrice,
+    stock_quantity: parsed.data.stockQuantity ?? null,
   });
   if (error) return { error: "Erro ao criar produto" };
 
@@ -135,6 +142,7 @@ export async function updateProduct(id: string, data: ProductInput): Promise<Pro
       visual_emoji: parsed.data.visualEmoji,
       image_url: newImageUrl,
       card_price: cardPrice,
+      stock_quantity: parsed.data.stockQuantity ?? null,
     })
     .eq("id", id)
     .eq("store_id", admin.storeId);

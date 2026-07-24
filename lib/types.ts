@@ -7,6 +7,7 @@ export type ProductDTO = {
   visual: { bg: string; emoji: string };
   imageUrl: string | null;
   cardPrice: number | null;
+  stockQuantity: number | null;
 };
 
 export type ProductAdminDTO = ProductDTO & {

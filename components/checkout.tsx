@@ -419,6 +419,7 @@ export function Checkout({
   };
 
   const [blockedClosed, setBlockedClosed] = useState(false);
+  const [blockedOutOfStock, setBlockedOutOfStock] = useState(false);
 
   const handleSendWhatsApp = () => {
     if (sent) return;
@@ -429,7 +430,7 @@ export function Checkout({
     // dizer "enviado" sem o WhatsApp realmente abrir.
     const whatsappWindow = window.open("", "_blank");
     startSaving(async () => {
-      let result: { ok: boolean; reason?: "closed" | "invalid" } = { ok: true };
+      let result: { ok: boolean; reason?: "closed" | "invalid" | "out_of_stock" } = { ok: true };
       try {
         result = await submitOrderAction({
           storeId: settings.id,
@@ -442,6 +443,7 @@ export function Checkout({
             quantity: entry.quantity,
             unitPrice: priceForEntry(entry),
           })),
+          stockItems: cart.map((entry) => ({ productId: entry.id, quantity: entry.quantity })),
           subtotal: cartTotalForPayment,
           deliveryFee: delivery,
           total: orderTotalForPayment,
@@ -450,13 +452,19 @@ export function Checkout({
         });
       } catch {
         // Falha de rede/infra ao salvar o pedido é conveniência (histórico do cliente) —
-        // não deve impedir o envio pelo WhatsApp. Só o motivo "closed" (loja fechada,
-        // validado no servidor) bloqueia o envio de fato.
+        // não deve impedir o envio pelo WhatsApp. Só os motivos "closed" (loja fechada) e
+        // "out_of_stock" (estoque insuficiente), validados no servidor, bloqueiam o envio.
       }
 
       if (!result.ok && result.reason === "closed") {
         whatsappWindow?.close();
         setBlockedClosed(true);
+        return;
+      }
+
+      if (!result.ok && result.reason === "out_of_stock") {
+        whatsappWindow?.close();
+        setBlockedOutOfStock(true);
         return;
       }
 
@@ -506,6 +514,24 @@ export function Checkout({
           <p className="text-muted-foreground max-w-sm">
             Não estamos aceitando pedidos fora do horário de funcionamento. Volte mais tarde
             para finalizar sua compra.
+          </p>
+          <ActionButton color="var(--primary)" onClick={() => router.push(`/${slug}`)}>Voltar ao catálogo</ActionButton>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Estoque esgotado ───────────────────────────────────────────────────────
+  if (!sent && blockedOutOfStock) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col">
+        <CheckoutHeader step={0} totalSteps={TOTAL_STEPS} storeName={storeName} brandIcon={brandIcon} slug={slug} onBack={() => router.back()} />
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 px-6 text-center">
+          <span className="text-7xl select-none">😔</span>
+          <h2 className="font-heading text-3xl font-black">Ops, esgotou!</h2>
+          <p className="text-muted-foreground max-w-sm">
+            Um dos itens do seu carrinho esgotou enquanto você finalizava o pedido. Volte ao
+            carrinho e ajuste a quantidade para continuar.
           </p>
           <ActionButton color="var(--primary)" onClick={() => router.push(`/${slug}`)}>Voltar ao catálogo</ActionButton>
         </div>

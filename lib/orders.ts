@@ -55,6 +55,17 @@ export async function createOrder(params: {
   if (error) throw error;
 }
 
+export async function decrementProductsStock(
+  items: { productId: string; quantity: number }[]
+): Promise<{ ok: true } | { ok: false }> {
+  const admin = createAdminClient();
+  const { error } = await admin.rpc("decrement_products_stock", {
+    p_items: items.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+  });
+  if (error) return { ok: false };
+  return { ok: true };
+}
+
 export async function findOrdersByPhone(storeId: string, phone: string): Promise<OrderDTO[]> {
   const admin = createAdminClient();
 

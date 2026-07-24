@@ -21,6 +21,7 @@ export async function getActiveProducts(storeId: string): Promise<ProductDTO[]> 
     visual: { bg: p.visual_bg, emoji: p.visual_emoji },
     imageUrl: p.image_url,
     cardPrice: p.card_price,
+    stockQuantity: p.stock_quantity,
   }));
 }
 
@@ -43,6 +44,7 @@ export async function getAllProductsForAdmin(storeId: string): Promise<ProductAd
     visual: { bg: p.visual_bg, emoji: p.visual_emoji },
     imageUrl: p.image_url,
     cardPrice: p.card_price,
+    stockQuantity: p.stock_quantity,
     active: p.active,
     sortOrder: p.sort_order,
   }));

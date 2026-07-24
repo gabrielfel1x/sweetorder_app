@@ -11,7 +11,6 @@ import {
   X,
   ArrowRight,
   Receipt,
-  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,6 +51,10 @@ function CookieCard({
   disabled?: boolean;
   acceptsInstallments: boolean;
 }) {
+  const isTracked = cookie.stockQuantity !== null;
+  const isSoldOut = isTracked && cookie.stockQuantity! <= 0;
+  const atMaxStock = isTracked && quantity >= cookie.stockQuantity!;
+
   return (
     <article
       className="group flex flex-col rounded-2xl overflow-hidden border border-border bg-card hover:-translate-y-1.5 hover:shadow-xl transition-all duration-300"
@@ -84,6 +87,12 @@ function CookieCard({
             {quantity}× no carrinho
           </div>
         )}
+
+        {isSoldOut && (
+          <div className="absolute top-3 left-3 bg-foreground/90 text-background text-xs font-heading font-bold px-2.5 py-1 rounded-full shadow-md">
+            Esgotado
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col flex-1 p-5 gap-3">
@@ -101,15 +110,22 @@ function CookieCard({
             <span className="font-heading text-2xl font-extrabold text-foreground tracking-tight">
               {fmt(cookie.price)}
             </span>
-            {acceptsInstallments && cookie.cardPrice != null && (
-              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
-                <CreditCard className="w-3.5 h-3.5" />
+            {acceptsInstallments && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
                 Parcele no cartão, valor varia conforme as parcelas
               </p>
             )}
           </div>
 
-          {quantity === 0 ? (
+          {isSoldOut ? (
+            <Button
+              size="sm"
+              disabled
+              className="rounded-full h-9 px-4 text-sm font-semibold w-full sm:w-auto opacity-60 cursor-not-allowed"
+            >
+              Esgotado
+            </Button>
+          ) : quantity === 0 ? (
             <Button
               size="sm"
               onClick={onAdd}
@@ -133,7 +149,7 @@ function CookieCard({
               </span>
               <button
                 onClick={onAdd}
-                disabled={disabled}
+                disabled={disabled || atMaxStock}
                 className="w-7 h-7 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:opacity-90 transition-all cursor-pointer active:scale-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 aria-label="Adicionar um"
               >
@@ -521,7 +537,7 @@ export function Catalog({
                 index={index}
                 onAdd={() => addToCart(cookie)}
                 onRemove={() => removeFromCart(cookie.id)}
-                disabled={isClosed}
+                disabled={isClosed || (cookie.stockQuantity !== null && cookie.stockQuantity <= 0)}
                 acceptsInstallments={acceptsInstallments}
               />
             ))}

@@ -13,6 +13,7 @@ export type CookieItem = {
   visual: { bg: string; emoji: string };
   imageUrl: string | null;
   cardPrice: number | null;
+  stockQuantity: number | null;
 };
 
 export type CartEntry = CookieItem & { quantity: number };
@@ -49,10 +50,13 @@ export function CartProvider({
   const addToCart = (cookie: CookieItem) => {
     setCart((prev) => {
       const existing = prev.find((i) => i.id === cookie.id);
-      if (existing)
+      if (existing) {
+        if (cookie.stockQuantity !== null && existing.quantity >= cookie.stockQuantity) return prev;
         return prev.map((i) =>
           i.id === cookie.id ? { ...i, quantity: i.quantity + 1 } : i
         );
+      }
+      if (cookie.stockQuantity !== null && cookie.stockQuantity <= 0) return prev;
       return [...prev, { ...cookie, quantity: 1 }];
     });
   };
