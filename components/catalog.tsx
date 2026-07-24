@@ -11,6 +11,7 @@ import {
   X,
   ArrowRight,
   Receipt,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -101,8 +102,9 @@ function CookieCard({
               {fmt(cookie.price)}
             </span>
             {acceptsInstallments && cookie.cardPrice != null && (
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                💳 Parcele no cartão — valor varia conforme as parcelas
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <CreditCard className="w-3.5 h-3.5" />
+                Parcele no cartão, valor varia conforme as parcelas
               </p>
             )}
           </div>

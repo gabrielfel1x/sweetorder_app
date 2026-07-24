@@ -45,7 +45,7 @@ function DayRow({ dayIndex, isPending }: { dayIndex: number; isPending: boolean 
       {isOpen && (
         <div className="flex flex-col gap-2">
           {fields.map((field, shiftIndex) => (
-            <div key={field.id} className="flex items-start gap-2">
+            <div key={field.id} className="flex items-center gap-2">
               <div className="flex-1">
                 <Input
                   type="time"

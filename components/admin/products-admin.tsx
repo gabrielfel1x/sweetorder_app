@@ -581,7 +581,7 @@ function ProductDialog({
           <div>
             <FieldLabel>Nome</FieldLabel>
             <Input
-              placeholder="Ex: Chocolate Chip Clássico"
+              placeholder="Ex: Nome do produto"
               disabled={isPending}
               className={inputClass(!!errors.name)}
               {...register("name")}
@@ -592,7 +592,7 @@ function ProductDialog({
           <div className="mt-3">
             <FieldLabel>Descrição</FieldLabel>
             <Textarea
-              placeholder="Descreva o cookie..."
+              placeholder="Descreva o produto..."
               disabled={isPending}
               rows={2}
               className={inputClass(!!errors.description, "rounded-xl px-4 py-2.5 border-2 focus-visible:ring-0 focus-visible:border-foreground transition-colors resize-none")}
@@ -618,7 +618,7 @@ function ProductDialog({
             <div>
               <FieldLabel>Categoria</FieldLabel>
               <Input
-                placeholder="Ex: clássicos"
+                placeholder="Ex: promoções"
                 disabled={isPending}
                 className={inputClass(!!errors.category)}
                 {...register("category")}
