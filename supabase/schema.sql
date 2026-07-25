@@ -38,10 +38,11 @@ create trigger products_set_updated_at
 
 alter table products enable row level security;
 
--- Catálogo público só vê produtos ativos
+-- Catálogo público só vê produtos ativos (anon e authenticated, para não
+-- esconder produtos de quem estiver logado mas sem vínculo com a loja)
 create policy "products_public_select_active"
   on products for select
-  to anon
+  to anon, authenticated
   using (active = true);
 
 -- Admin autenticado (Supabase Auth) vê e gerencia tudo
