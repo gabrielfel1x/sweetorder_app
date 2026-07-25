@@ -10,7 +10,7 @@ export const ALLOWED_WHATSAPP_PLACEHOLDERS = [
 
 export type WhatsAppPlaceholder = (typeof ALLOWED_WHATSAPP_PLACEHOLDERS)[number];
 
-export const DEFAULT_WHATSAPP_TEMPLATE = `*Novo Pedido — {{loja}}*
+export const DEFAULT_WHATSAPP_TEMPLATE = `*Novo Pedido: {{loja}}*
 
 *Itens do pedido:*
 {{itens}}
@@ -49,7 +49,7 @@ export function renderWhatsAppTemplate(
 export function truncateWhatsAppMessage(message: string, maxEncodedLength = 1900): string {
   if (encodeURIComponent(message).length <= maxEncodedLength) return message;
 
-  const suffix = "\n\n[mensagem truncada — detalhes completos no pedido salvo]";
+  const suffix = "\n\n[mensagem truncada, detalhes completos no pedido salvo]";
   const suffixEncodedLength = encodeURIComponent(suffix).length;
 
   let result = "";

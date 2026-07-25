@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { Cookie, LogOut, LayoutGrid, UserPlus } from "lucide-react";
+import { Clock, LogOut, LayoutGrid, UserPlus } from "lucide-react";
 import { getAuthUser, getCurrentSuperAdmin } from "@/lib/session-helpers";
 import { logoutAction } from "@/app/login/actions";
 
@@ -20,7 +20,7 @@ export default async function SuperAdminLayout({ children }: { children: React.R
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="max-w-6xl mx-auto px-5 md:px-8 h-16 flex items-center justify-between gap-4">
           <Link href="/superadmin" className="flex items-center gap-2 shrink-0">
-            <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+            <Clock className="w-5 h-5" strokeWidth={2.75} style={{ color: "var(--brand-sage)" }} />
             <span
               className="font-heading text-lg font-bold tracking-tight hidden sm:inline"
               style={{ color: "var(--brand-sage)" }}

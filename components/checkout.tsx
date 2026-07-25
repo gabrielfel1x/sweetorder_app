@@ -396,20 +396,20 @@ export function Checkout({
 
   const buildMessage = () => {
     const itens = cart
-      .map((entry) => `• ${entry.quantity}× ${entry.name} — ${fmt(priceForEntry(entry) * entry.quantity)}`)
+      .map((entry) => `• ${entry.quantity}× ${entry.name}: ${fmt(priceForEntry(entry) * entry.quantity)}`)
       .join("\n");
 
     const paymentLabels: Record<PaymentMethod, string> = {
-      pix: pixKey.trim() ? `PIX — Chave: ${pixKey.trim()}` : "PIX",
-      cash: change.trim() ? `Dinheiro na entrega — troco para ${change}` : "Dinheiro na entrega",
+      pix: pixKey.trim() ? `PIX (Chave: ${pixKey.trim()})` : "PIX",
+      cash: change.trim() ? `Dinheiro na entrega, troco para ${change}` : "Dinheiro na entrega",
       card: isCardAdjusted
-        ? `Cartão — ${installments}x de ${fmt(orderTotalForPayment / installments)}${installmentPct > 0 ? ` (juros de ${fmtPct(installmentPct)})` : " sem juros"}`
+        ? `Cartão, ${installments}x de ${fmt(orderTotalForPayment / installments)}${installmentPct > 0 ? ` (juros de ${fmtPct(installmentPct)})` : " sem juros"}`
         : "Cartão",
     };
 
     const endereco = acceptsDelivery
       ? [
-          `${effectiveAddress.street}, ${effectiveAddress.number}${effectiveAddress.complement ? ` — ${effectiveAddress.complement}` : ""}`,
+          `${effectiveAddress.street}, ${effectiveAddress.number}${effectiveAddress.complement ? `, ${effectiveAddress.complement}` : ""}`,
           effectiveAddress.neighborhood,
           `${effectiveAddress.city}/${effectiveAddress.state}`,
           `CEP: ${effectiveAddress.cep}`,
@@ -726,7 +726,7 @@ export function Checkout({
                             className="text-xs mt-0.5"
                             style={{ color: selected ? "rgba(255,255,255,0.8)" : "var(--muted-foreground)" }}
                           >
-                            {addr.neighborhood} — {addr.city}/{addr.state}
+                            {addr.neighborhood}, {addr.city}/{addr.state}
                           </p>
                         </div>
                         <div
@@ -1007,7 +1007,7 @@ export function Checkout({
                   {acceptsInstallments ? (
                     <>
                       <p className="text-sm text-muted-foreground leading-relaxed">
-                        💳 Parcele sua compra em até {FREE_INSTALLMENTS}x sem juros — o valor total
+                        💳 Parcele sua compra em até {FREE_INSTALLMENTS}x sem juros, o valor total
                         pode variar de acordo com o número de parcelas escolhido.
                       </p>
                       <div className="mt-3">
@@ -1025,7 +1025,7 @@ export function Checkout({
                             const total = totalForInstallments(n);
                             return (
                               <option key={n} value={n}>
-                                {n}x de {fmt(total / n)} {pct > 0 ? `(com juros — total ${fmt(total)})` : "sem juros"}
+                                {n}x de {fmt(total / n)} {pct > 0 ? `(com juros, total ${fmt(total)})` : "sem juros"}
                               </option>
                             );
                           })}
@@ -1034,7 +1034,7 @@ export function Checkout({
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground leading-relaxed">
-                      Leve o cartão na entrega — o pagamento é feito com a maquininha do entregador.
+                      Leve o cartão na entrega, o pagamento é feito com a maquininha do entregador.
                     </p>
                   )}
                 </div>

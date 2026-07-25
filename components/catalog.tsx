@@ -411,7 +411,7 @@ export function Catalog({
                 alt={storeName}
                 fill
                 sizes="96px"
-                className="object-contain p-2"
+                className="object-cover"
                 onError={() => setLogoFailed(true)}
               />
             </div>
@@ -450,27 +450,34 @@ export function Catalog({
       </section>
 
       <section
-        className="max-w-7xl mx-auto w-full px-4 sm:px-6 pb-8 animate-slide-up"
+        className="max-w-7xl mx-auto w-full pb-8 animate-slide-up"
         style={{ animationDelay: "0.3s" }}
       >
-        <div className="flex gap-2 flex-wrap">
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setCategory(cat)}
-              className={`
-                px-4 py-2 rounded-full text-sm font-medium capitalize transition-all duration-200 cursor-pointer
-                ${
-                  category === cat
-                    ? "text-white shadow-sm scale-105"
-                    : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border"
-                }
-              `}
-              style={category === cat ? { backgroundColor: "var(--primary)" } : {}}
-            >
-              {cat}
-            </button>
-          ))}
+        <div className="relative">
+          <div
+            className="flex gap-2 overflow-x-auto px-4 sm:px-6 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {categories.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={`
+                  shrink-0 px-4 py-2 rounded-full text-sm font-medium capitalize transition-all duration-200 cursor-pointer whitespace-nowrap
+                  ${
+                    category === cat
+                      ? "text-white shadow-sm scale-105"
+                      : "bg-secondary text-muted-foreground hover:text-foreground hover:bg-border"
+                  }
+                `}
+                style={category === cat ? { backgroundColor: "var(--primary)" } : {}}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+          {/* Fade nas bordas indicando que há mais categorias pra rolar */}
+          <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-background to-transparent sm:hidden" />
+          <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-background to-transparent" />
         </div>
       </section>
 

@@ -6,7 +6,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const settings = await getStoreBySlug(slug);
   if (!settings) return {};
-  return { title: `Meus pedidos — ${settings.storeName}` };
+  return { title: `Meus pedidos • ${settings.storeName}` };
 }
 
 export default async function OrdersPage({ params }: { params: Promise<{ slug: string }> }) {

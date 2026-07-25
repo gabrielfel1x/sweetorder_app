@@ -116,7 +116,7 @@ export function GeneralFields({ isPending }: { isPending: boolean }) {
           <p className="mt-0.5 text-xs text-muted-foreground">
             {isPublished
               ? "Sua loja aparece no diretório inicial, junto com as outras."
-              : "Sua loja fica fora do diretório inicial. Só quem tiver o link direto (/" + (slug || "sua-loja") + ") consegue acessar — use para terminar de configurar antes de abrir ao público."}
+              : "Sua loja fica fora do diretório inicial. Só quem tiver o link direto (/" + (slug || "sua-loja") + ") consegue acessar. Use para terminar de configurar antes de abrir ao público."}
           </p>
         </div>
         <Controller

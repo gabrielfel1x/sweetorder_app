@@ -4,7 +4,7 @@ import { getStoreById } from "@/lib/settings";
 import { ProductsAdmin } from "@/components/admin/products-admin";
 
 export const metadata = {
-  title: "Produtos — Painel administrativo",
+  title: "Produtos • Painel administrativo",
 };
 
 export default async function AdminProductsPage() {

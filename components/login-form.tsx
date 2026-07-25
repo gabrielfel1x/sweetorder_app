@@ -95,7 +95,7 @@ export function LoginForm({ from }: { from?: string }) {
       )}
 
       <div className="mt-8">
-        <ActionButton type="submit" disabled={isPending}>
+        <ActionButton type="submit" disabled={isPending} color="var(--brand-sage)">
           {isPending ? (
             <Loader2 className="w-4 h-4 animate-spin" />
           ) : (

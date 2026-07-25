@@ -152,7 +152,7 @@ export function CustomerOrders({
                       <div className="flex items-start gap-1.5 text-xs text-muted-foreground">
                         <MapPin className="w-3.5 h-3.5 mt-0.5 shrink-0" />
                         <span>
-                          {order.address.street}, {order.address.number} — {order.address.neighborhood},{" "}
+                          {order.address.street}, {order.address.number}, {order.address.neighborhood},{" "}
                           {order.address.city}/{order.address.state}
                         </span>
                       </div>
@@ -164,7 +164,7 @@ export function CustomerOrders({
                     )}
                     <p className="text-xs text-muted-foreground">
                       Pagamento: {PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod}
-                      {order.paymentNote ? ` — troco para ${order.paymentNote}` : ""}
+                      {order.paymentNote ? `, troco para ${order.paymentNote}` : ""}
                     </p>
                   </div>
                 </div>

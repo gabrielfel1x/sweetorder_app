@@ -4,7 +4,7 @@ import { requireAdmin } from "@/lib/session-helpers";
 import { StoreSettingsForm } from "@/components/admin/store-settings-form";
 
 export const metadata = {
-  title: "Configurações da loja — Painel administrativo",
+  title: "Configurações da loja • Painel administrativo",
 };
 
 export default async function AdminStorePage() {

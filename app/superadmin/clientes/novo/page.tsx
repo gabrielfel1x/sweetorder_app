@@ -1,7 +1,7 @@
 import { NewClientForm } from "@/components/superadmin/new-client-form";
 
 export const metadata = {
-  title: "Novo cliente — Painel SaaS",
+  title: "Novo cliente • Painel SaaS",
 };
 
 export default function NewClientPage() {

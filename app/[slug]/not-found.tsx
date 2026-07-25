@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Cookie, Store } from "lucide-react";
+import { Clock, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function StoreNotFound() {
@@ -18,7 +18,7 @@ export default function StoreNotFound() {
 
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-2">
-          <Cookie className="w-5 h-5" style={{ color: "var(--brand-sage)" }} />
+          <Clock className="w-5 h-5" strokeWidth={2.75} style={{ color: "var(--brand-sage)" }} />
           <span
             className="font-heading text-xl font-bold tracking-tight"
             style={{ color: "var(--brand-sage)" }}

@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { Clock } from "lucide-react";
 import { getAuthUser, getCurrentAdmin } from "@/lib/session-helpers";
 import { LoginForm } from "@/components/login-form";
 
 export const metadata = {
-  title: "Entrar — Painel administrativo",
+  title: "Entrar • Painel administrativo",
 };
 
 function safeRedirectTarget(from: string | undefined): string | null {
@@ -32,11 +32,14 @@ export default async function LoginPage({
     <div className="min-h-screen bg-background flex items-center justify-center px-5 py-10">
       <div className="w-full max-w-md">
         <div className="flex flex-col items-center text-center mb-6">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
-            style={{ backgroundColor: "color-mix(in oklch, var(--primary) 14%, var(--card))" }}
-          >
-            <LockKeyhole className="w-6 h-6" style={{ color: "var(--primary)" }} />
+          <div className="flex items-center gap-2 mb-4">
+            <Clock className="w-6 h-6" strokeWidth={2.75} style={{ color: "var(--brand-sage)" }} />
+            <span
+              className="font-heading text-lg font-bold tracking-tight"
+              style={{ color: "var(--brand-sage)" }}
+            >
+              PedeNaHora
+            </span>
           </div>
           <h1 className="font-heading text-4xl font-black tracking-tight leading-tight">
             Entrar
