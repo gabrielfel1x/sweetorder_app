@@ -396,15 +396,6 @@ export function Catalog({
               )}
             </h1>
 
-            {isManuallyClosedToday && (
-              <p
-                className="mt-1 text-sm font-bold animate-slide-up"
-                style={{ color: "var(--destructive)", animationDelay: "0.05s" }}
-              >
-                Fechada hoje — não estamos recebendo pedidos.
-              </p>
-            )}
-
             <p
               className="mt-1.5 text-xs sm:text-sm text-muted-foreground leading-relaxed animate-slide-up"
               style={{ animationDelay: "0.1s" }}
@@ -436,12 +427,12 @@ export function Catalog({
               <span
                 className="w-1.5 h-1.5 rounded-full shrink-0"
                 style={{
-                  backgroundColor: hoursStatus.isOpenNow ? "var(--primary)" : "var(--muted-foreground)",
+                  backgroundColor: hoursStatus.isOpenNow ? "var(--primary)" : "var(--destructive)",
                 }}
               />
               <span
                 className="font-semibold"
-                style={{ color: hoursStatus.isOpenNow ? "var(--primary)" : "var(--muted-foreground)" }}
+                style={{ color: hoursStatus.isOpenNow ? "var(--primary)" : "var(--destructive)" }}
               >
                 {hoursStatus.isOpenNow ? "Aberto agora" : "Fechado agora"}
               </span>
