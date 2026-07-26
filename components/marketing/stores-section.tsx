@@ -58,37 +58,17 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
 
         <div className="flex items-center justify-between pt-1">
           <span className="text-xs text-muted-foreground truncate">/{store.slug}</span>
-          {isPublished ? (
-            <span
-              className="flex items-center gap-1.5 text-sm font-semibold shrink-0"
-              style={{ color }}
-            >
-              Ver loja
-              <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
-            </span>
-          ) : (
-            <span className="text-sm font-semibold shrink-0 text-muted-foreground">
-              Em breve
-            </span>
-          )}
+          <span
+            className="flex items-center gap-1.5 text-sm font-semibold shrink-0"
+            style={{ color }}
+          >
+            Ver loja
+            <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+          </span>
         </div>
       </div>
     </>
   );
-
-  if (!isPublished) {
-    return (
-      <div
-        className="flex flex-col rounded-2xl overflow-hidden border border-border bg-card opacity-80 cursor-default"
-        style={{
-          animation: `card-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) ${index * 0.06}s both`,
-        }}
-        aria-disabled="true"
-      >
-        {cardContent}
-      </div>
-    );
-  }
 
   return (
     <Link
