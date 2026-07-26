@@ -17,6 +17,7 @@ import {
   Gem,
   Package,
   Heart,
+  PawPrint,
   type LucideIcon,
 } from "lucide-react";
 
@@ -39,6 +40,7 @@ export const STORE_ICONS = {
   Gem,
   Package,
   Heart,
+  PawPrint,
 } satisfies Record<string, LucideIcon>;
 
 export type StoreIconName = keyof typeof STORE_ICONS;
@@ -70,6 +72,7 @@ export const STORE_ICON_EMOJI = {
   Gem: "💎",
   Package: "📦",
   Heart: "❤️",
+  PawPrint: "🐾",
 } satisfies Record<StoreIconName, string>;
 
 export const STORE_ICON_EMOJI_PRESETS = {
@@ -91,6 +94,7 @@ export const STORE_ICON_EMOJI_PRESETS = {
   Gem: ["💎", "💍", "✨", "👑", "🌟", "🔮", "🪞", "💫", "❤️"],
   Package: ["📦", "🏷️", "🎁", "📮", "✉️", "🧾", "🛒", "📫", "❤️"],
   Heart: ["❤️", "💖", "💕", "💗", "💝", "🩷", "💫", "✨", "🌹"],
+  PawPrint: ["🐾", "🐶", "🐱", "🦴", "🐟", "🥩", "🧡", "🏠", "❤️"],
 } satisfies Record<StoreIconName, string[]>;
 
 export function getStoreEmoji(name: string | null | undefined): string {
