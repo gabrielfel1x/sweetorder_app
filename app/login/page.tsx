@@ -52,13 +52,6 @@ export default async function LoginPage({
         <div className="rounded-3xl border-2 border-border bg-card p-6 sm:p-8">
           <LoginForm from={safeFrom ?? undefined} />
         </div>
-
-        <p className="mt-6 text-center text-sm text-muted-foreground">
-          Ainda não tem uma loja?{" "}
-          <a href="/cadastro" className="font-semibold text-foreground hover:underline">
-            Cadastre-se
-          </a>
-        </p>
       </div>
     </div>
   );
