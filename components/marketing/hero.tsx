@@ -68,11 +68,11 @@ export function Hero({ publishedCount }: { publishedCount: number }) {
 
         <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="/cadastro"
+            href="/login"
             className="group inline-flex items-center gap-2 h-14 px-8 rounded-full font-heading font-black text-white transition-transform active:scale-95"
             style={{ backgroundColor: "var(--brand-sage)" }}
           >
-            Criar minha loja
+            Entrar na minha loja
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
           <a
