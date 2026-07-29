@@ -544,7 +544,7 @@ export function Catalog({
       </main>
 
       <Sheet open={cartOpen} onOpenChange={setCartOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-[420px] flex flex-col p-0 gap-0">
+        <SheetContent side="right" className="w-full sm:max-w-[420px] flex flex-col p-0 gap-0 overflow-hidden">
           <SheetHeader className="px-6 pt-6 pb-4">
             <SheetTitle className="font-heading text-2xl font-extrabold tracking-tight flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" style={{ color: "var(--primary)" }} />
@@ -578,7 +578,7 @@ export function Catalog({
             </div>
           ) : (
             <>
-              <ScrollArea className="flex-1 px-6">
+              <ScrollArea className="flex-1 min-h-0 px-6">
                 <div className="divide-y divide-border">
                   {cart.map((entry) => (
                     <CartItemRow
