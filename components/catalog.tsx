@@ -234,6 +234,7 @@ export function Catalog({
   manuallyClosedDate,
   acceptsInstallments,
   logoUrl,
+  logoBgColor,
 }: {
   slug: string;
   products: CookieItem[];
@@ -244,6 +245,7 @@ export function Catalog({
   manuallyClosedDate: string | null;
   acceptsInstallments: boolean;
   logoUrl: string | null;
+  logoBgColor: string | null;
 }) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("todos");
@@ -405,7 +407,10 @@ export function Catalog({
           </div>
 
           {logoUrl && !logoFailed && (
-            <div className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl overflow-hidden bg-white shadow-sm animate-slide-up" style={{ animationDelay: "0.05s" }}>
+            <div
+              className="relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-2xl overflow-hidden shadow-sm animate-slide-up"
+              style={{ animationDelay: "0.05s", backgroundColor: logoBgColor ?? "#ffffff" }}
+            >
               <Image
                 src={logoUrl}
                 alt={storeName}

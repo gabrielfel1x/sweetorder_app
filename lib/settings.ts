@@ -1,5 +1,6 @@
 import { cache } from "react";
 import { createClient } from "@/lib/supabase/server";
+import { getDominantColor } from "@/lib/dominant-color";
 import type { StoreListItemDTO, StoreSettingsDTO } from "@/lib/types";
 
 function mapStoreRow(row: {
@@ -25,7 +26,7 @@ function mapStoreRow(row: {
   logo_url: string | null;
   is_published: boolean;
   manually_closed_date: string | null;
-}): StoreSettingsDTO {
+}, logoBgColor: string | null): StoreSettingsDTO {
   return {
     id: row.id,
     storeName: row.store_name,
@@ -47,6 +48,7 @@ function mapStoreRow(row: {
     themeColor: row.theme_color,
     brandIcon: row.brand_icon,
     logoUrl: row.logo_url,
+    logoBgColor,
     isPublished: row.is_published,
     manuallyClosedDate: row.manually_closed_date,
   };
@@ -63,7 +65,8 @@ export const getStoreBySlug = cache(async (slug: string): Promise<StoreSettingsD
   if (error) throw error;
   if (!row) return null;
 
-  return mapStoreRow(row);
+  const logoBgColor = row.logo_url ? await getDominantColor(row.logo_url) : null;
+  return mapStoreRow(row, logoBgColor);
 });
 
 export async function getStoreById(id: string): Promise<StoreSettingsDTO> {
@@ -76,7 +79,8 @@ export async function getStoreById(id: string): Promise<StoreSettingsDTO> {
 
   if (error) throw error;
 
-  return mapStoreRow(row);
+  const logoBgColor = row.logo_url ? await getDominantColor(row.logo_url) : null;
+  return mapStoreRow(row, logoBgColor);
 }
 
 export async function getAllStores(): Promise<StoreListItemDTO[]> {
@@ -88,13 +92,16 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
 
   if (error) throw error;
 
-  return data.map((row) => ({
-    id: row.id,
-    slug: row.slug,
-    storeName: row.store_name,
-    storeDescription: row.store_description,
-    brandColor: row.brand_color,
-    isPublished: row.is_published,
-    logoUrl: row.logo_url,
-  }));
+  return Promise.all(
+    data.map(async (row) => ({
+      id: row.id,
+      slug: row.slug,
+      storeName: row.store_name,
+      storeDescription: row.store_description,
+      brandColor: row.brand_color,
+      isPublished: row.is_published,
+      logoUrl: row.logo_url,
+      logoBgColor: row.logo_url ? await getDominantColor(row.logo_url) : null,
+    }))
+  );
 }

@@ -20,7 +20,11 @@ function StoreCard({ store, index }: { store: StoreListItemDTO; index: number })
 
       <div
         className="relative aspect-[16/9] flex items-center justify-center overflow-hidden"
-        style={{ backgroundColor: showLogo ? "#ffffff" : `color-mix(in oklch, ${color} 14%, var(--card))` }}
+        style={{
+          backgroundColor: showLogo
+            ? store.logoBgColor ?? "#ffffff"
+            : `color-mix(in oklch, ${color} 14%, var(--card))`,
+        }}
       >
         {showLogo ? (
           <Image
