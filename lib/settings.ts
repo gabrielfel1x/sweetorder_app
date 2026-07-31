@@ -3,6 +3,15 @@ import { createClient } from "@/lib/supabase/server";
 import { getDominantColor } from "@/lib/dominant-color";
 import type { StoreListItemDTO, StoreSettingsDTO } from "@/lib/types";
 
+// Lojas que devem manter o fundo branco original atrás do logo,
+// em vez da cor predominante extraída da imagem.
+const LOGO_BG_COLOR_EXCLUDED_SLUGS = ["lolocookies"];
+
+async function resolveLogoBgColor(slug: string, logoUrl: string | null): Promise<string | null> {
+  if (!logoUrl || LOGO_BG_COLOR_EXCLUDED_SLUGS.includes(slug)) return null;
+  return getDominantColor(logoUrl);
+}
+
 function mapStoreRow(row: {
   id: string;
   store_name: string;
@@ -65,7 +74,7 @@ export const getStoreBySlug = cache(async (slug: string): Promise<StoreSettingsD
   if (error) throw error;
   if (!row) return null;
 
-  const logoBgColor = row.logo_url ? await getDominantColor(row.logo_url) : null;
+  const logoBgColor = await resolveLogoBgColor(row.slug, row.logo_url);
   return mapStoreRow(row, logoBgColor);
 });
 
@@ -79,7 +88,7 @@ export async function getStoreById(id: string): Promise<StoreSettingsDTO> {
 
   if (error) throw error;
 
-  const logoBgColor = row.logo_url ? await getDominantColor(row.logo_url) : null;
+  const logoBgColor = await resolveLogoBgColor(row.slug, row.logo_url);
   return mapStoreRow(row, logoBgColor);
 }
 
@@ -101,7 +110,7 @@ export async function getAllStores(): Promise<StoreListItemDTO[]> {
       brandColor: row.brand_color,
       isPublished: row.is_published,
       logoUrl: row.logo_url,
-      logoBgColor: row.logo_url ? await getDominantColor(row.logo_url) : null,
+      logoBgColor: await resolveLogoBgColor(row.slug, row.logo_url),
     }))
   );
 }
